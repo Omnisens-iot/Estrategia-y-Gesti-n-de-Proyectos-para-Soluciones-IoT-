@@ -19,7 +19,7 @@ OmniSens es un sistema orientado al monitoreo y control ambiental en entornos in
 | Nombre                        | GitHub                                 |
 |------------------------------|----------------------------------------|
 | Mario Gonzalez               | [@mariogonzalezispc](https://github.com/mariogonzalezispc) |
-| Jorge Morales                | [@JorEl057](https://github.com/JorEl057) |
+| Alejandro Di Marco           |                                          |
 | Ana Farias                   |                                          | 
 | Dante Violi                  |                                          |
 
