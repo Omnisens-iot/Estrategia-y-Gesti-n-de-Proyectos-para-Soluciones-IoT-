@@ -72,7 +72,7 @@ El sistema está compuesto por:
 
 ---
 
-# Omnisens
+## Omnisens ##
 
 ## 🧭 1. Introducción y Problemática
 **OmniSens** es un sistema de monitoreo y control ambiental industrial desarrollado por estudiantes del módulo **Estrategia y Gestión de Proyectos para Soluciones IoT**  del ISPC. Este proyecto integra tecnologías de hardware, software y comunicaciones para adquirir, almacenar, visualizar y actuar sobre datos ambientales críticos en tiempo real.
@@ -120,6 +120,8 @@ El sistema OmniSens está basado en una arquitectura IoT distribuida y escalable
 - **Dashboard de visualización**: mediante **Grafana** o/y **Node-Red**, permite observar en tiempo real el estado ambiental.
 
 ---
+[![Diagrama-logico-de-arquitectura.png](https://i.postimg.cc/Xq14MHK2/Diagrama-logico-de-arquitectura.png)](https://postimg.cc/4HcrV1St)
+
 ### 🧩 Diagrama lógico de la arquitectura:
 
 plaintext
