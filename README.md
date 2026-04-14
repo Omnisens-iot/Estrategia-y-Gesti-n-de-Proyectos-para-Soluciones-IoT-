@@ -47,7 +47,7 @@ Desarrollar un sistema capaz de:
 
 ## Arquitectura del Sistema  
 
-[![Chat-GPT-Image-30-may-2025-19-56-52.png](https://i.postimg.cc/TPdkMvfs/Chat-GPT-Image-30-may-2025-19-56-52.png)](https://postimg.cc/Bjz5Hy85)
+[![Arquitectura-del-sistema.png](https://i.postimg.cc/QdXkYf4k/Arquitectura-del-sistema.png)](https://postimg.cc/HVhyV9CV)
 
 El sistema está compuesto por:
 - **Sensores ambientales**: Medición de variables críticas.  
@@ -79,11 +79,12 @@ El sistema está compuesto por:
 
 En entornos industriales, controlar variables como la **temperatura**, **humedad**, **presión atmosférica** y **luminosidad** es fundamental para garantizar la seguridad operativa, la eficiencia energética y el cumplimiento de normativas. Sin embargo, muchas industrias carecen de sistemas inteligentes que permitan:
 
-📉 Monitoreo en tiempo real de las condiciones ambientales.
-⚠️ Detección temprana de riesgos operativos.
-📄 Registro y trazabilidad de datos históricos.
-📊 Análisis automatizado y toma de decisiones basada en datos.
-🚫 Evitar decisiones basadas en intuición o registros incompletos.
+# 📉 Monitoreo en tiempo real de las condiciones ambientales.
+# ⚠️ Detección temprana de riesgos operativos.
+# 📄 Registro y trazabilidad de datos históricos.
+# 📊 Análisis automatizado y toma de decisiones basada en datos.
+# 🚫 Evitar decisiones basadas en intuición o registros incompletos.
+
 Ante este contexto, OmniSens surge como una solución tecnológica que permite:
 
 Capturar datos desde sensores distribuidos mediante nodos IoT (ESP32).
