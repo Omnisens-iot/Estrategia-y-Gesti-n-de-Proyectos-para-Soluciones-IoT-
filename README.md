@@ -79,11 +79,11 @@ El sistema está compuesto por:
 
 En entornos industriales, controlar variables como la **temperatura**, **humedad**, **presión atmosférica** y **luminosidad** es fundamental para garantizar la seguridad operativa, la eficiencia energética y el cumplimiento de normativas. Sin embargo, muchas industrias carecen de sistemas inteligentes que permitan:
 
-# 📉 Monitoreo en tiempo real de las condiciones ambientales.
-# ⚠️ Detección temprana de riesgos operativos.
-# 📄 Registro y trazabilidad de datos históricos.
-# 📊 Análisis automatizado y toma de decisiones basada en datos.
-# 🚫 Evitar decisiones basadas en intuición o registros incompletos.
+- 📉 Monitoreo en tiempo real de las condiciones ambientales.
+- ⚠️ Detección temprana de riesgos operativos.
+- 📄 Registro y trazabilidad de datos históricos.
+- 📊 Análisis automatizado y toma de decisiones basada en datos.
+- 🚫 Evitar decisiones basadas en intuición o registros incompletos.
 
 Ante este contexto, OmniSens surge como una solución tecnológica que permite:
 
