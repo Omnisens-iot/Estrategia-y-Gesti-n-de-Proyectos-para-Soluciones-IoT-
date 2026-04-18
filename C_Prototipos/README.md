@@ -1,8 +1,6 @@
-## PROGRAMADOR FULLSTACK - GRUPO PLATA
+[![c491f1d4-f64d-4af9-8f3a-d395638ccc71.png](https://i.postimg.cc/VLDpSDfx/c491f1d4-f64d-4af9-8f3a-d395638ccc71.png)](https://postimg.cc/BXPMk51p)
 
-[![logo.png](https://i.postimg.cc/jSWHy389/logo.png)](https://postimg.cc/dhYZY6cm)
-
-# OmniSens – Sistema de Monitoreo y Control Ambiental Industrial
+## OmniSens IoT – Sistema Orientado al Monitoreo y Control Ambiental en Entornos Industriales ##
 
 **OmniSens** es un sistema orientado al monitoreo y control ambiental en entornos industriales. Utiliza sensores para medir variables críticas como temperatura, humedad, presión y luminosidad, y transmite estos datos mediante tecnología **LoRa** hacia un servidor en la nube, permitiendo monitoreo y gestión en tiempo real.
 
@@ -15,11 +13,7 @@
 | Fernando Gimenez Coria       | [@FerCbr](https://github.com/FerCbr) |
 | Paola Pantoja                | [@PaolaaPantoja](https://github.com/PaolaaPantoja) |
 | Diego Ares                   | [@diegote7](https://github.com/diegote7) |
-| Emma Vilma Gutierrez         | [@emygut](https://github.com/emygut) |
 | Macarena Aylèn Carballo      | [@MacarenaAC](https://github.com/MacarenaAC) |
-| Romina Vanesa Huk            | [@RoHu17](https://github.com/RoHu17) |
-| Juan Diego Gonzalez Antoniazzi | [@JDGA1997](https://github.com/JDGA1997) |
-| Leandro Roldan               | [@pleroldan](https://github.com/pleroldan) |
 | Raul Jara                    | [@r-j28](https://github.com/r-j28) |
 ---
 
@@ -28,8 +22,10 @@
 | Nombre                        | GitHub                                 |
 |------------------------------|----------------------------------------|
 | Mario Gonzalez               | [@mariogonzalezispc](https://github.com/mariogonzalezispc) |
-| Jorge Morales                | [@JorEl057](https://github.com/JorEl057) |
-| Alejandro Mainero            | []() |
+| Ana Farias                   |                                        |
+| Dante Violi                  |                                        |
+| Alejandro DI Marco           |                                        |
+
 
 ## Descripción General
 
