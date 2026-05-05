@@ -1,9 +1,10 @@
 #include "SensorData.h"
 
-SensorData::SensorData(String id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht,LDRSensor* ldr, SalidasRele* rele, SalidaPWM* pwm)
-    : _id(id), _mq(mq), _bmp(bmp), _aht(aht), _ldr(ldr), _rele(rele), _pwm(pwm) {}   ///*  */
+SensorData::SensorData(const char* id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr, SalidasRele* rele, SalidaPWM* pwm)
+    : _id(id), _mq(mq), _bmp(bmp), _aht(aht), _ldr(ldr), _rele(rele), _pwm(pwm) {}
 
-String SensorData::toJSON() {float gas = _mq ? _mq->readFilteredData() : -1.0;
+void SensorData::populateJson(JsonDocument& doc) {
+    float gas = _mq ? _mq->readFilteredData() : -1.0;
     int mq135_ok = (!isnan(gas) && gas > 0.0) ? 1 : 0;
     if (!mq135_ok) gas = -1.0;
 
@@ -28,23 +29,17 @@ String SensorData::toJSON() {float gas = _mq ? _mq->readFilteredData() : -1.0;
 
     unsigned long ts = millis();
 
-    String json = "{";
-    json += "\"ID\":\"" + _id + "\",";
-    json += "\"tS\":" + String(ts) + ",";
-    json += "\"g\":" + String(gas, 2) + ",";
-    json += "\"tB\":" + String(temp_bmp, 2) + ",";
-    json += "\"p\":" + String(presion, 2) + ",";
-    json += "\"tA\":" + String(temp_aht, 2) + ",";
-    json += "\"h\":" + String(humedad, 2) + ",";
-    json += "\"l\":" + String(luz) + ",";
-    json += "\"r1\":" + String(rele1) + ",";
-    json += "\"r2\":" + String(rele2) + ",";
-    json += "\"pwm\":" + String(pwm);
-    //json += "\"sensor_status\":{";
-    //json += "\"mq135\":" + String(mq135_ok) + ",";
-    //json += "\"bmp280\":" + String(bmp280_ok) + ",";
-    //json += "\"aht25\":" + String(aht25_ok);
-    json += "}";
-
-    return json;
+    // Llenar el documento JSON usando claves cortas para ahorrar ancho de banda MQTT
+    // Alineado con el backend de OmniSens (Hito 2)
+    doc["device_id"] = _id;
+    //doc["tS"] = ts; // Backend pondrá timestamp propio
+    doc["co2"] = gas; // Mapeado provisional
+    doc["pm25"] = gas > 0 ? gas * 0.5 : 0; // Fake PM25 for testing backend
+    doc["pm10"] = gas > 0 ? gas * 0.8 : 0; // Fake PM10 for testing backend
+    doc["temp"] = temp_aht > 0 ? temp_aht : temp_bmp;
+    doc["hum"] = humedad;
+    doc["l"] = luz;
+    doc["r1"] = rele1;
+    doc["r2"] = rele2;
+    doc["pwm"] = pwm;
 }

@@ -1,0 +1,47 @@
+---
+- name: Despliegue Automatizado de OmniSens AQI
+  hosts: nodos_atom
+  become: yes
+  vars:
+    project_dir: "/home/fernandogc/aqi_project"
+    git_repo: "git@github.com:tu-usuario/omnisens-aqi.git" # REPLACE_ME
+    git_branch: "main"
+
+  tasks:
+    - name: Asegurar que el directorio base exista con los permisos correctos
+      ansible.builtin.file:
+        path: "{{ project_dir }}"
+        state: directory
+        owner: fernandogc
+        group: fernandogc
+        mode: '0755'
+
+    - name: Clonar o actualizar el repositorio fuente
+      ansible.builtin.git:
+        repo: "{{ git_repo }}"
+        dest: "{{ project_dir }}"
+        version: "{{ git_branch }}"
+        update: yes
+        force: yes
+
+    - name: Generar archivo .env desde la plantilla
+      ansible.builtin.template:
+        src: .env.j2
+        dest: "{{ project_dir }}/.env"
+        owner: fernandogc
+        group: fernandogc
+        mode: '0600'
+
+    - name: Asegurar que la red de Docker externa exista
+      community.docker.docker_network:
+        name: omni_agro_omnisens_net
+        state: present
+        driver: bridge
+
+    - name: Compilar y desplegar contenedores con Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_dir }}"
+        state: present
+        build: always
+        remove_orphans: yes
+        pull: always

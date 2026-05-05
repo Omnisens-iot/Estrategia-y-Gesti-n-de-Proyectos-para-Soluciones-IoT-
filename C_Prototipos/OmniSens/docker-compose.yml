@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: aqi_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: ${POSTGRES_DB:-aqi_db}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - omnisens_net
+    restart: unless-stopped
+
+  emqx:
+    image: emqx:latest
+    container_name: aqi_emqx
+    environment:
+      EMQX_NODE_NAME: emqx@node1.emqx.io
+      EMQX_CLUSTER__DISCOVERY_STRATEGY: manual
+      # Configuración recomendada para IoT Edge
+      EMQX_ALLOW_ANONYMOUS: "true" # Solo en red privada. Se restringe con ACLs o auth interna
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - ./configuraciones/emqx_acl.conf:/opt/emqx/etc/acl.conf:ro
+    networks:
+      - omnisens_net
+    restart: unless-stopped
+
+  aqi_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aqi_backend
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-root}
+      - DB_NAME=${POSTGRES_DB:-aqi_db}
+      - MQTT_BROKER_URL=mqtt://emqx:1883
+      - MQTT_USERNAME=${MQTT_BACKEND_USER:-backend_service}
+      - MQTT_PASSWORD=${MQTT_BACKEND_PASS:-backend_pass}
+      - JWT_SECRET=${JWT_SECRET:-supersecretjwt}
+    depends_on:
+      - postgres
+      - emqx
+    networks:
+      - omnisens_net
+    restart: unless-stopped
+
+  aqi_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aqi_frontend
+    depends_on:
+      - aqi_backend
+    networks:
+      - omnisens_net
+    restart: unless-stopped
+
+networks:
+  omnisens_net:
+    external: true
+    name: omni_agro_omnisens_net
+
+volumes:
+  pg_data:
+  emqx_data:

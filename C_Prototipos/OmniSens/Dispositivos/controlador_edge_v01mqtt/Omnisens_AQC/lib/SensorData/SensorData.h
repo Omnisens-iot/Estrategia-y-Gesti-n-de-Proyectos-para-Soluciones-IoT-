@@ -2,6 +2,7 @@
 #define SENSORDATA_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <MQ135Sensor.h>
 #include <BMP280Sensor.h>
 #include <AHT25Sensor.h>
@@ -11,13 +12,15 @@
 
 class SensorData {
 public:
-    SensorData(String id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr,
+    SensorData(const char* id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr,
                SalidasRele* rele, SalidaPWM* pwm);
 
-    String toJSON();
+    // En lugar de devolver un String que fragmenta el Heap,
+    // inyectamos los datos en un JsonDocument pre-alocado por referencia.
+    void populateJson(JsonDocument& doc);
 
 private:
-    String _id;
+    const char* _id;
     MQ135Sensor* _mq;
     BMP280Sensor* _bmp;
     AHT25Sensor* _aht;
