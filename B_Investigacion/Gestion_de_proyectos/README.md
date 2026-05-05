@@ -27,7 +27,7 @@ El sistema se basa en una arquitectura de 3 capas:
 - Procesamiento local
 - Activación de actuadores
 
-### 🔹 Red (LoRa + MQTT)
+### 🔹 Red (wifi/ MQTT)
 - Comunicación de largo alcance
 - Baja latencia para eventos críticos
 
