@@ -27,20 +27,20 @@ El sistema se basa en una arquitectura de 3 capas:
 - Procesamiento local
 - Activación de actuadores
 
-### 🔹 Red (wifi/ MQTT)
+### 🔹 Red (WIfi/ MQTT)
 - Comunicación de largo alcance
 - Baja latencia para eventos críticos
 
 ### 🔹 Servidor (Docker)
 - Node-RED (lógica)
-- MariaDB (persistencia)
+- Base de datos (persistencia)
 - Grafana (visualización)
 
 ---
 
 ## 🔄 Flujo de Datos
 
-Sensor → ESP32 → LoRa → MQTT → Node-RED → Base de datos → Grafana
+Sensor → ESP32 → MQTT → Node-RED → Base de datos → Grafana
 
 ---
 
