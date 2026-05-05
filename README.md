@@ -367,7 +367,7 @@ El desarrollo del proyecto OmniSens se organizó en etapas, siguiendo una planif
 > El trabajo organizado y en equipo fue clave para alcanzar un producto sólido, demostrando competencias técnicas y metodológicas aplicadas al desarrollo de sistemas IoT reales.
 
 ---
-## 💰 Modelo de Negocio
+## 💰 9. Modelo de Negocio
 
 OmniSens adopta un modelo híbrido:
 
@@ -405,7 +405,7 @@ Se identifican riesgos técnicos, operativos y de seguridad con estrategias de m
 Actualmente en desarrollo bajo metodología ágil con backlog estructurado y tareas en ejecución.
 
 ---
-## ✅ 9. Conclusión, Aplicaciones y Cierre
+## ✅ 10. Conclusión, Aplicaciones y Cierre
 
 OmniSens es el resultado de un trabajo colaborativo y multidisciplinario que integra tecnologías de IoT, comunicaciones, desarrollo de software y análisis de datos para resolver una problemática concreta del ámbito industrial: la necesidad de monitorear y controlar variables ambientales de forma precisa y en tiempo real, optimizando el sistema, brindando soluciones reales ejecutando acciones o actividades   lo mas desatendidas y seguras posibles. 
 
