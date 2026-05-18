@@ -7,6 +7,8 @@
 #include "AHT25Sensor.h"
 #include "BMP280Sensor.h"
 #include "LDRSensor.h"
+#include "DustSensor.h"
+#include "BH1750Sensor.h"
 #include "SalidaPWM.h"
 #include "SalidasRele.h"
 #include "SensorData.h"
@@ -20,6 +22,8 @@
 #define RELE_1 33
 #define RELE_2 25
 #define LDR_PIN 36
+#define DUST_AOUT_PIN 34 // Pin analógico para el sensor Sharp
+#define DUST_ILED_PIN 4  // Pin digital para el LED del sensor Sharp
 #define LED_PIN 2     // LED integrado en ESP32
 #define BOOT_BTN 0    // Botón BOOT del ESP32
 
@@ -35,12 +39,14 @@ MQ135Sensor mq135(MQ135_PIN);
 AHT25Sensor aht25;
 BMP280Sensor bmp280;
 LDRSensor ldr(LDR_PIN);
+DustSensor dust(DUST_AOUT_PIN, DUST_ILED_PIN);
+BH1750Sensor bh1750;
 SalidaPWM vel_motor(PWM_PIN);
 SalidasRele salidas(RELE_1, RELE_2);
 LedIndicator led(LED_PIN);
 
 // Instancia de Lógica y Red
-SensorData sensorData("AQC_001", &mq135, &bmp280, &aht25, &ldr, &salidas, &vel_motor);
+SensorData sensorData("AQC_001", &mq135, &bmp280, &aht25, &ldr, &dust, &bh1750, &salidas, &vel_motor);
 NetworkManager network(MQTT_BROKER, MQTT_PORT, &led);
 
 // FreeRTOS
@@ -70,6 +76,16 @@ void taskSensors(void *pvParameters) {
         esp_task_wdt_reset();
 
         if (xSemaphoreTake(sensorMutex, portMAX_DELAY)) {
+            // Sincronizar configuracion
+            SensorConfig cfg;
+            cfg.en_mq135 = network.enMq135();
+            cfg.en_bmp280 = network.enBmp280();
+            cfg.en_aht25 = network.enAht25();
+            cfg.en_ldr = network.enLdr();
+            cfg.en_bh1750 = network.enBh1750();
+            cfg.en_dust = network.enDust();
+            sensorData.setConfig(cfg);
+
             sharedDoc.clear();
             sensorData.populateJson(sharedDoc);
             newDataAvailable = true;
@@ -145,6 +161,8 @@ void setup() {
     bmp280.begin();
     mq135.begin();
     ldr.begin();
+    dust.begin();
+    bh1750.begin();
     vel_motor.begin();
     vel_motor.comandoPWM(0);
     salidas.begin();

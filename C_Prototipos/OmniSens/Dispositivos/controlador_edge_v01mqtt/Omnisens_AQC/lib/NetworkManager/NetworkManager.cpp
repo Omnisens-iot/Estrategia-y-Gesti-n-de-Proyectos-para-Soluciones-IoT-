@@ -45,8 +45,11 @@ void NetworkManager::begin() {
     _prefs.begin("omnisens", false);
     _hmacToken = _prefs.getString("hmac_token", "");
 
+    loadConfig(); // Cargar la configuración de los sensores
+
     _wm.setDebugOutput(SystemLogger::isDebugEnabled());
     _wm.setConfigPortalBlocking(false); 
+    _wm.setSaveConfigCallback(NetworkManager::saveConfigCallbackWrapper);
 
     connectWiFi();
 }
@@ -139,8 +142,39 @@ void NetworkManager::connectMQTT() {
     }
 }
 
+void NetworkManager::publishDeviceConfig() {
+    if (!isConnected()) return;
+    
+    String topic = "aqi/telemetry/" + _macAddress + "/config_status";
+    StaticJsonDocument<256> doc;
+    doc["device_id"] = "AQC_001";
+    
+    JsonObject sensors = doc.createNestedObject("sensors");
+    sensors["mq135"] = _en_mq135;
+    sensors["bmp280"] = _en_bmp280;
+    sensors["aht25"] = _en_aht25;
+    sensors["ldr"] = _en_ldr;
+    sensors["bh1750"] = _en_bh1750;
+    sensors["sharp_pm"] = _en_dust;
+
+    char buffer[256];
+    size_t n = serializeJson(doc, buffer);
+    if (_mqttClient.publish(topic.c_str(), (const uint8_t*)buffer, n, true)) { // Retained true para que siempre esté disponible
+        SystemLogger::info("Configuracion de sensores notificada a la plataforma.");
+    } else {
+        SystemLogger::error("Fallo al notificar config.");
+    }
+}
+
 void NetworkManager::publishTelemetry(JsonDocument& doc) {
     if (!isConnected() || _hmacToken.length() == 0) return;
+
+    // Publicamos la config al menos una vez cuando se reporta telemetría (o al conectar)
+    static bool configPublished = false;
+    if (!configPublished) {
+        publishDeviceConfig();
+        configPublished = true;
+    }
 
     String topic = "aqi/telemetry/" + _macAddress + "/data";
     char buffer[512];
@@ -229,4 +263,73 @@ void NetworkManager::mqttCallback(char* topic, byte* payload, unsigned int lengt
             performOTA(url.c_str());
         }
     }
+}
+
+void NetworkManager::saveConfigCallbackWrapper() {
+    if (globalNetworkManager) globalNetworkManager->saveConfig();
+}
+
+void NetworkManager::saveConfig() {
+    SystemLogger::info("Guardando nueva configuracion desde WiFiManager...");
+    _en_mq135 = (String(_param_mq135->getValue()) == "1");
+    _en_bmp280 = (String(_param_bmp280->getValue()) == "1");
+    _en_aht25 = (String(_param_aht25->getValue()) == "1");
+    _en_ldr = (String(_param_ldr->getValue()) == "1");
+    _en_bh1750 = (String(_param_bh1750->getValue()) == "1");
+    _en_dust = (String(_param_dust->getValue()) == "1");
+
+    _prefs.putBool("en_mq135", _en_mq135);
+    _prefs.putBool("en_bmp280", _en_bmp280);
+    _prefs.putBool("en_aht25", _en_aht25);
+    _prefs.putBool("en_ldr", _en_ldr);
+    _prefs.putBool("en_bh1750", _en_bh1750);
+    _prefs.putBool("en_dust", _en_dust);
+
+    SystemLogger::info("Configuracion guardada. Notificando a plataforma...");
+    publishDeviceConfig(); // Notificar en el acto
+}
+
+void NetworkManager::loadConfig() {
+    _en_mq135 = _prefs.getBool("en_mq135", true);
+    _en_bmp280 = _prefs.getBool("en_bmp280", true);
+    _en_aht25 = _prefs.getBool("en_aht25", true);
+    _en_ldr = _prefs.getBool("en_ldr", false);
+    _en_bh1750 = _prefs.getBool("en_bh1750", true);
+    _en_dust = _prefs.getBool("en_dust", true);
+
+    // Creamos campos HTML personalizados que emulan checkboxes robustos.
+    // Usamos un campo de texto oculto que se sincroniza con el checkbox mediante JS.
+    auto makeHtml = [](const char* id, bool val) -> String {
+        String html = "type='hidden' id='h_";
+        html += id;
+        html += "' value='";
+        html += val ? "1" : "0";
+        html += "'><input type='checkbox' onchange='document.getElementById(\"h_";
+        html += id;
+        html += "\").value = this.checked ? \"1\" : \"0\";' ";
+        html += val ? "checked" : "";
+        html += ">";
+        return html;
+    };
+
+    String h_mq = makeHtml("mq135", _en_mq135);
+    String h_bmp = makeHtml("bmp280", _en_bmp280);
+    String h_aht = makeHtml("aht25", _en_aht25);
+    String h_ldr = makeHtml("ldr", _en_ldr);
+    String h_bh = makeHtml("bh1750", _en_bh1750);
+    String h_dust = makeHtml("dust", _en_dust);
+
+    _param_mq135 = new WiFiManagerParameter("mq135", "Sensor de gases", _en_mq135 ? "1" : "0", 2, h_mq.c_str());
+    _param_bmp280 = new WiFiManagerParameter("bmp280", "Sensor de presion y temp", _en_bmp280 ? "1" : "0", 2, h_bmp.c_str());
+    _param_aht25 = new WiFiManagerParameter("aht25", "Sensor de temp y humedad", _en_aht25 ? "1" : "0", 2, h_aht.c_str());
+    _param_ldr = new WiFiManagerParameter("ldr", "Sensor luz analogico", _en_ldr ? "1" : "0", 2, h_ldr.c_str());
+    _param_bh1750 = new WiFiManagerParameter("bh1750", "Sensor luz digital", _en_bh1750 ? "1" : "0", 2, h_bh.c_str());
+    _param_dust = new WiFiManagerParameter("dust", "Sensor de particulas PM10", _en_dust ? "1" : "0", 2, h_dust.c_str());
+
+    _wm.addParameter(_param_mq135);
+    _wm.addParameter(_param_bmp280);
+    _wm.addParameter(_param_aht25);
+    _wm.addParameter(_param_ldr);
+    _wm.addParameter(_param_bh1750);
+    _wm.addParameter(_param_dust);
 }

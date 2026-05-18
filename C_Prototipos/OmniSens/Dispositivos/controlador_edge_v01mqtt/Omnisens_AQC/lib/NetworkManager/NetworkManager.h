@@ -24,6 +24,15 @@ public:
     void loop();
     bool isConnected();
     void publishTelemetry(JsonDocument& doc);
+    void publishDeviceConfig(); // Notificar a la plataforma la configuración
+    
+    // Getters para configuración
+    bool enMq135() { return _en_mq135; }
+    bool enBmp280() { return _en_bmp280; }
+    bool enAht25() { return _en_aht25; }
+    bool enLdr() { return _en_ldr; }
+    bool enBh1750() { return _en_bh1750; }
+    bool enDust() { return _en_dust; }
     
     // Setters
     void setActuatorCallback(ActuatorCallback cb);
@@ -45,6 +54,21 @@ private:
     Preferences _prefs;
     WiFiManager _wm;
 
+    // Configuración de Sensores
+    bool _en_mq135 = true;
+    bool _en_bmp280 = true;
+    bool _en_aht25 = true;
+    bool _en_ldr = false;
+    bool _en_bh1750 = true;
+    bool _en_dust = true;
+    
+    WiFiManagerParameter* _param_mq135;
+    WiFiManagerParameter* _param_bmp280;
+    WiFiManagerParameter* _param_aht25;
+    WiFiManagerParameter* _param_ldr;
+    WiFiManagerParameter* _param_bh1750;
+    WiFiManagerParameter* _param_dust;
+
     String _macAddress;
     String _hmacToken;
 
@@ -55,6 +79,9 @@ private:
     void connectMQTT();
     void mqttCallback(char* topic, byte* payload, unsigned int length);
     static void mqttCallbackWrapper(char* topic, byte* payload, unsigned int length);
+    void loadConfig();
+    void saveConfig();
+    static void saveConfigCallbackWrapper();
 };
 
 // Singleton pointer for the wrapper
