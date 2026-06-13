@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar dependencias completas para compilar
-RUN npm ci
+RUN npm install
 
 # Copiar el código fuente y compilar a JavaScript
 COPY . .
@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Copiar dependencias de ejecución
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copiar la aplicación compilada desde la etapa anterior
 COPY --from=builder /app/dist ./dist

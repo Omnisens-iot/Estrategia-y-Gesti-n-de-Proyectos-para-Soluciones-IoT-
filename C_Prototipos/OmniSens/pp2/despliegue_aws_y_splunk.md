@@ -64,6 +64,11 @@ Para permitir el tráfico del frontend, del simulador y de las conexiones de los
    ```
    *La plataforma ahora estará accesible desde cualquier navegador ingresando la IP pública de AWS (`http://<IP_PUBLICA_AWS>`).*
 
+> [!NOTE]
+> **Resolución de Error en npm ci durante la compilación:**
+> Si la compilación de la imagen del frontend o backend arroja un error con `npm ci` (exit code: 1), se debe a discrepancias multiplataforma en el archivo `package-lock.json` (por ejemplo, al desarrollar en Windows e intentar construir en contenedores de Alpine Linux).
+> Para solucionar esto, las imágenes del proyecto fueron modificadas de `RUN npm ci` a `RUN npm install` en sus respectivos `Dockerfile`, permitiendo que npm resuelva dinámicamente los binarios adecuados para Linux sin fallar. También se agregaron archivos `.dockerignore` para optimizar el peso del contexto de construcción.
+
 ---
 
 ## 2. Estrategia de Recolección de Logs con Splunk
