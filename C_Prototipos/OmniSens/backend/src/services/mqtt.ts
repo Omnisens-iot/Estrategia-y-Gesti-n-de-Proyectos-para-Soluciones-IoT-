@@ -86,16 +86,23 @@ export function setupMqttSubscriber() {
         const payload = JSON.parse(message.toString());
         
         // Validar payload mínimo (Security by Design: Evitar inserts corruptos)
-        if (payload.pm25 !== undefined && payload.pm10 !== undefined) {
+        if (payload.pm10 !== undefined || payload.temp !== undefined || payload.lux !== undefined || payload.l !== undefined) {
           await db.insertInto('air_quality_data')
             .values({
               time: new Date(),
               device_id: deviceId,
-              pm25: payload.pm25,
-              pm10: payload.pm10,
-              co2: payload.co2 || null,
-              temp: payload.temp || null,
-              hum: payload.hum || null
+              pm25: payload.pm25 !== undefined ? payload.pm25 : -1.0,
+              pm10: payload.pm10 !== undefined ? payload.pm10 : -1.0,
+              co2: payload.co2 !== undefined ? payload.co2 : null,
+              temp: payload.temp !== undefined ? payload.temp : null,
+              hum: payload.hum !== undefined ? payload.hum : null,
+              pres: payload.pres !== undefined ? payload.pres : null,
+              l: payload.l !== undefined ? payload.l : null,
+              lux: payload.lux !== undefined ? payload.lux : null,
+              battery: payload.battery !== undefined ? payload.battery : (payload.bat !== undefined ? payload.bat : null),
+              r1: payload.r1 !== undefined ? payload.r1 : null,
+              r2: payload.r2 !== undefined ? payload.r2 : null,
+              pwm: payload.pwm !== undefined ? payload.pwm : null
             })
             .execute();
           

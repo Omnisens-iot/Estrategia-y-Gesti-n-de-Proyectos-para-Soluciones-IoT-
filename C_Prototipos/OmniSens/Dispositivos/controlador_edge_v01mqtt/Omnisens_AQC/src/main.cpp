@@ -26,6 +26,7 @@
 #define DUST_ILED_PIN 4  // Pin digital para el LED del sensor Sharp
 #define LED_PIN 2     // LED integrado en ESP32
 #define BOOT_BTN 0    // Botón BOOT del ESP32
+#define BATTERY_PIN 35 // Pin analógico divisor de batería
 
 // Credenciales Base
 const char* MQTT_BROKER = "ispciot.org";
@@ -46,7 +47,7 @@ SalidasRele salidas(RELE_1, RELE_2);
 LedIndicator led(LED_PIN);
 
 // Instancia de Lógica y Red
-SensorData sensorData("AQC_001", &mq135, &bmp280, &aht25, &ldr, &dust, &bh1750, &salidas, &vel_motor);
+SensorData sensorData("AQC_001", &mq135, &bmp280, &aht25, &ldr, &dust, &bh1750, &salidas, &vel_motor, BATTERY_PIN);
 NetworkManager network(MQTT_BROKER, MQTT_PORT, &led);
 
 // FreeRTOS
@@ -148,8 +149,9 @@ void setup() {
     // Inicializar Watchdog global
     esp_task_wdt_init(WDT_TIMEOUT, true);
 
-    // Inicializar Botón y LED
+    // Inicializar Botón, LED y Pin de Batería
     pinMode(BOOT_BTN, INPUT_PULLUP);
+    pinMode(BATTERY_PIN, INPUT);
     led.begin();
 
     // Inicializar I2C

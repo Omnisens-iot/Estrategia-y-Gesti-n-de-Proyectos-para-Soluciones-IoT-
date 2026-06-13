@@ -13,6 +13,11 @@ services:
     networks:
       - omnisens_net
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   emqx:
     image: emqx:latest
@@ -20,14 +25,21 @@ services:
     environment:
       EMQX_NODE_NAME: emqx@node1.emqx.io
       EMQX_CLUSTER__DISCOVERY_STRATEGY: manual
-      # Configuración recomendada para IoT Edge
-      EMQX_ALLOW_ANONYMOUS: "true" # Solo en red privada. Se restringe con ACLs o auth interna
+      EMQX_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "1883:1883"      # MQTT Broker port
+      - "8883:8883"      # MQTTS Secure port
     volumes:
       - emqx_data:/opt/emqx/data
       - ./configuraciones/emqx_acl.conf:/opt/emqx/etc/acl.conf:ro
     networks:
       - omnisens_net
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aqi_backend:
     build:
@@ -50,22 +62,33 @@ services:
     networks:
       - omnisens_net
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aqi_frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: aqi_frontend
+    ports:
+      - "80:80"          # Direct HTTP access on AWS host
     depends_on:
       - aqi_backend
     networks:
       - omnisens_net
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   omnisens_net:
-    external: true
-    name: omni_agro_omnisens_net
+    driver: bridge
 
 volumes:
   pg_data:

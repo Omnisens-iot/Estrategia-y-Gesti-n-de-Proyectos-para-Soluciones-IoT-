@@ -1,0 +1,10 @@
+version: '3.8'
+
+# Override para el entorno Local (Netbook Atom)
+# Este entorno no expone puertos al host, ya que el Nginx Maestro se comunica
+# directamente con los contenedores usando la red externa omni_agro_omnisens_net.
+
+networks:
+  omnisens_net:
+    external: true
+    name: omni_agro_omnisens_net

@@ -66,6 +66,13 @@ Almacena las mediciones crudas segundo a segundo (o minuto a minuto). Está conv
 | `co2` | FLOAT | Concentración de Dióxido de Carbono (ppm). |
 | `temp` | FLOAT | Temperatura ambiente (°C). |
 | `hum` | FLOAT | Humedad relativa (%). |
+| `pres` | FLOAT | Presión atmosférica (hPa). |
+| `l` | INTEGER | Valor analógico del LDR (0 - 4095) como respaldo de luz. |
+| `lux` | FLOAT | Intensidad lumínica en lux (BH1750) como sensor de luz primario. |
+| `battery` | FLOAT | Tensión medida en la batería (V). Excluida de dashboards ambientales y mostrada en administrador. |
+| `r1` | INTEGER | Estado del Relé 1 (Extractor) (0: OFF, 1: ON). |
+| `r2` | INTEGER | Estado del Relé 2 (Calefactor) (0: OFF, 1: ON). |
+| `pwm` | INTEGER | Velocidad controlada por PWM para el motor (0 - 255). |
 
 > **Nota de Optimización (Data Lifecycle)**: Cuenta con una **Política de Retención** que elimina los datos de esta tabla automáticamente cuando superan los **30 días** de antigüedad, evitando que el disco se llene por el volumen masivo de datos crudos.
 

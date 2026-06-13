@@ -1,0 +1,15 @@
+version: '3.8'
+
+# Override para el entorno de Nube (AWS EC2)
+# Este entorno expone los puertos necesarios para el tráfico público desde Internet.
+
+services:
+  aqi_frontend:
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+  emqx:
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "18083:18083" # Puerto para el dashboard de EMQX

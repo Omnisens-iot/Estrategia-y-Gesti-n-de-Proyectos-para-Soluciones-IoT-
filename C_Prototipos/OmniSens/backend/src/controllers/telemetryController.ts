@@ -9,13 +9,14 @@ interface TelemetryQuery {
   days?: string;
 }
 
-export const getHistory = async (request: FastifyRequest<{ Params: TelemetryParams; Querystring: TelemetryQuery }>, reply: FastifyReply) => {
+export const getHistory = async (request: FastifyRequest, reply: FastifyReply) => {
   const clientId = request.user.client_id;
-  const { deviceId } = request.params;
-  const days = parseInt(request.query.days || '1', 10); // Por defecto 1 día (24 horas)
+  const { deviceId } = request.params as TelemetryParams;
+  const { days } = request.query as TelemetryQuery;
+  const daysParsed = parseInt(days || '1', 10); // Por defecto 1 día (24 horas)
   
   // Limitar consulta a un máximo de 365 días para proteger la BD
-  const safeDays = Math.min(Math.max(days, 1), 365);
+  const safeDays = Math.min(Math.max(daysParsed, 1), 365);
 
   try {
     // 1. Validar que el dispositivo le pertenezca al cliente y no esté borrado lógicamente
@@ -50,9 +51,9 @@ export const getHistory = async (request: FastifyRequest<{ Params: TelemetryPara
   }
 };
 
-export const getNow = async (request: FastifyRequest<{ Params: TelemetryParams }>, reply: FastifyReply) => {
+export const getNow = async (request: FastifyRequest, reply: FastifyReply) => {
   const clientId = request.user.client_id;
-  const { deviceId } = request.params;
+  const { deviceId } = request.params as TelemetryParams;
 
   try {
     // 1. Obtener el dato más reciente directamente de la vista multi-tenant

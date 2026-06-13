@@ -24,7 +24,7 @@ struct SensorConfig {
 class SensorData {
 public:
     SensorData(const char* id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr,
-               DustSensor* dust, BH1750Sensor* bh1750, SalidasRele* rele, SalidaPWM* pwm);
+               DustSensor* dust, BH1750Sensor* bh1750, SalidasRele* rele, SalidaPWM* pwm, int batteryPin = -1);
 
     void setConfig(SensorConfig config);
 
@@ -42,6 +42,7 @@ private:
     BH1750Sensor* _bh1750;
     SalidasRele* _rele;
     SalidaPWM* _pwm;
+    int _batteryPin;
 
     SensorConfig _config;
 };

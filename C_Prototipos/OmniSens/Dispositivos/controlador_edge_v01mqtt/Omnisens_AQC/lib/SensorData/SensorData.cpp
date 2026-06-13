@@ -1,7 +1,7 @@
 #include "SensorData.h"
 
-SensorData::SensorData(const char* id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr, DustSensor* dust, BH1750Sensor* bh1750, SalidasRele* rele, SalidaPWM* pwm)
-    : _id(id), _mq(mq), _bmp(bmp), _aht(aht), _ldr(ldr), _dust(dust), _bh1750(bh1750), _rele(rele), _pwm(pwm) {}
+SensorData::SensorData(const char* id, MQ135Sensor* mq, BMP280Sensor* bmp, AHT25Sensor* aht, LDRSensor* ldr, DustSensor* dust, BH1750Sensor* bh1750, SalidasRele* rele, SalidaPWM* pwm, int batteryPin)
+    : _id(id), _mq(mq), _bmp(bmp), _aht(aht), _ldr(ldr), _dust(dust), _bh1750(bh1750), _rele(rele), _pwm(pwm), _batteryPin(batteryPin) {}
 
 void SensorData::setConfig(SensorConfig config) {
     _config = config;
@@ -56,4 +56,12 @@ void SensorData::populateJson(JsonDocument& doc) {
     doc["r1"] = rele1;
     doc["r2"] = rele2;
     doc["pwm"] = pwm;
+
+    if (_batteryPin >= 0) {
+        int raw = analogRead(_batteryPin);
+        // Divisor resistivo 100k/100k (factor de atenuación = 2.0). Referencia ADC de 3.3V.
+        float volt = (raw / 4095.0) * 3.3 * 2.0;
+        if (volt < 0.0) volt = 0.0;
+        doc["battery"] = volt;
+    }
 }

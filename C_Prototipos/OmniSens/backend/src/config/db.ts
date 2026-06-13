@@ -11,6 +11,13 @@ export interface Database {
     co2: number | null;
     temp: number | null;
     hum: number | null;
+    pres: number | null;
+    l: number | null;
+    lux: number | null;
+    battery: number | null;
+    r1: number | null;
+    r2: number | null;
+    pwm: number | null;
   };
   devices: {
     device_id: string;
@@ -32,6 +39,10 @@ export interface Database {
     avg_co2: number;
     avg_temp: number;
     avg_hum: number;
+    avg_pres: number;
+    avg_l: number;
+    avg_lux: number;
+    avg_battery: number;
   };
   vw_telemetry_by_client: {
     time: Date;
@@ -44,6 +55,13 @@ export interface Database {
     co2: number | null;
     temp: number | null;
     hum: number | null;
+    pres: number | null;
+    l: number | null;
+    lux: number | null;
+    battery: number | null;
+    r1: number | null;
+    r2: number | null;
+    pwm: number | null;
   };
 }
 

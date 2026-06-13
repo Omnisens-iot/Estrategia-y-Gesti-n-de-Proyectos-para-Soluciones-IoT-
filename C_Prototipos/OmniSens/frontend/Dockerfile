@@ -11,8 +11,8 @@ RUN npm run build
 # Stage 2: Serve
 FROM nginx:alpine
 
-# Copiar configuración de nginx (Si la requieres, opcional para SPAs)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copiar configuración de nginx para enrutar la SPA y la API
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copiar el build generado
 COPY --from=builder /app/dist /usr/share/nginx/html

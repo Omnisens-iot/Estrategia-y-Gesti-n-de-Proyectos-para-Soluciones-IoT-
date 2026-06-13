@@ -1,37 +1,59 @@
+# ==============================================================================
+# Plantilla de Configuración de Nginx Maestro (Local - Netbook Atom)
+# Ubicación original: configuraciones/aqi.conf.j2
+# ==============================================================================
+
 server {
     listen 80;
     server_name ispciot.org www.ispciot.org;
 
-    # Opcional: Redirigir a HTTPS si tienes configurado Certbot en la Raspberry Pi
-    # return 301 https://$host$request_uri;
-
-    # Enrutamiento para el Backend API
-    location /api/ {
-        proxy_pass http://aqi_backend:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Enrutamiento para el Frontend Vue (Nginx Multi-stage)
-    location / {
-        proxy_pass http://aqi_frontend:80;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Logs específicos para OmniSens
+    # Logs específicos para la plataforma OmniSens
     access_log /var/log/nginx/omnisens_access.log;
     error_log /var/log/nginx/omnisens_error.log;
+
+    # Opcional: Redirección automática a HTTPS (Configuración para Certbot / SSL)
+    # listen 443 ssl;
+    # ssl_certificate /etc/letsencrypt/live/ispciot.org/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/ispciot.org/privkey.pem;
+    # if ($scheme != "https") {
+    #     return 301 https://$host$request_uri;
+    # }
+
+    # --------------------------------------------------------------------------
+    # Enrutamiento para el Backend API (Fastify)
+    # --------------------------------------------------------------------------
+    location /api/ {
+        # Apunta al contenedor aqi_backend en el puerto 3000
+        # Resolviendo la IP dinámicamente mediante DNS interno de Docker en la red compartida
+        proxy_pass http://aqi_backend:3000;
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Inyección de headers de cliente para auditoría de IP real en la API
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --------------------------------------------------------------------------
+    # Enrutamiento para el Frontend Vue 3 (Vite + Nginx en contenedor)
+    # --------------------------------------------------------------------------
+    location / {
+        # Apunta al contenedor de Frontend en el puerto 80 dentro de la red Docker
+        proxy_pass http://aqi_frontend:80;
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }

@@ -7,9 +7,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#10b981', // Emerald 500
-        dark: '#1e293b', // Slate 800
-        darker: '#0f172a', // Slate 900
+        primary: '#00A5CF', // Turquesa / Cyan corporativo
+        secondary: '#004e64', // Azul oscuro intermedio
+        dark: '#0b1329', // Azul marino profundo para tarjetas
+        darker: '#050814', // Azul casi negro para fondo general
+        accent: '#00b4d8', // Cyan claro para hover
       }
     },
   },

@@ -1,0 +1,34 @@
+version: '3.8'
+
+# ==============================================================================
+# Configuración de Override para Desarrollo Local (Tu PC Windows)
+# ==============================================================================
+# Este archivo es interpretado automáticamente por Docker Compose al ejecutar
+# 'docker compose up' en tu máquina local. Mapea puertos al host para facilitar
+# el desarrollo y pruebas directas.
+#
+# NOTA: No interfiere con el despliegue automático de Ansible, ya que el playbook
+# de Ansible reemplaza este archivo en el destino remoto con las plantillas .j2.
+
+services:
+  postgres:
+    ports:
+      - "5432:5432" # Expone Postgres para herramientas como DBeaver o pgAdmin
+    volumes:
+      - ./configuraciones/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro # Inicializa y siembra la DB
+
+  emqx:
+    ports:
+      - "1883:1883"      # Puerto MQTT estándar (para simular dispositivos)
+      - "8883:8883"      # Puerto MQTT seguro (TLS/MQTTS)
+      - "18083:18083"    # Panel de administración web de EMQX
+
+  aqi_backend:
+    ports:
+      - "3000:3000"      # Expone la API Fastify para pruebas con curl o Postman
+    environment:
+      - NODE_ENV=development
+
+  aqi_frontend:
+    ports:
+      - "8080:80"        # Expone la web app de Vue 3 en http://localhost:8080

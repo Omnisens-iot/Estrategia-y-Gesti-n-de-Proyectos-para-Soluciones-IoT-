@@ -1,22 +1,76 @@
 ---
-- name: Despliegue Automatizado de OmniSens AQI
-  hosts: nodos_atom
+# ==============================================================================
+# Play 1: Aprovisionamiento de Instancias en la Nube (Solo para AWS EC2)
+# ==============================================================================
+- name: Aprovisionamiento de Docker, Docker Compose y Git en AWS
+  hosts: nodos_aws
   become: yes
-  vars:
-    project_dir: "/home/fernandogc/aqi_project"
-    git_repo: "git@github.com:tu-usuario/omnisens-aqi.git" # REPLACE_ME
-    git_branch: "main"
-
   tasks:
-    - name: Asegurar que el directorio base exista con los permisos correctos
+    - name: Actualizar caché de paquetes (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar prerrequisitos necesarios (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+          - lsb-release
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar Git (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: git
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar Git (RedHat/CentOS/Amazon Linux)
+      ansible.builtin.yum:
+        name: git
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Descargar e instalar Docker usando el script oficial
+      ansible.builtin.shell: |
+        curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Asegurar que el servicio de Docker esté iniciado y habilitado
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Añadir el usuario SSH al grupo docker (para ejecutar compose sin sudo)
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Forzar recarga de membresía de grupos para la sesión actual
+      ansible.builtin.meta: reset_connection
+
+# ==============================================================================
+# Play 2: Despliegue de la Aplicación OmniSens (Ambos entornos)
+# ==============================================================================
+- name: Despliegue de Contenedores de OmniSens (Híbrido)
+  hosts: all
+  become: no  # El despliegue de Docker se ejecuta con el usuario ssh que pertenece al grupo docker
+  vars:
+    # Estas variables pueden sobreescribirse en inventory.ini o group_vars
+    frontend_expose_port: "80"
+  tasks:
+    - name: Asegurar que el directorio del proyecto exista
       ansible.builtin.file:
         path: "{{ project_dir }}"
         state: directory
-        owner: fernandogc
-        group: fernandogc
         mode: '0755'
 
-    - name: Clonar o actualizar el repositorio fuente
+    - name: Clonar/Actualizar el repositorio público de GitHub
       ansible.builtin.git:
         repo: "{{ git_repo }}"
         dest: "{{ project_dir }}"
@@ -24,20 +78,43 @@
         update: yes
         force: yes
 
-    - name: Generar archivo .env desde la plantilla
+    - name: Inyectar archivo .env configurado dinámicamente
       ansible.builtin.template:
         src: .env.j2
         dest: "{{ project_dir }}/.env"
-        owner: fernandogc
-        group: fernandogc
         mode: '0600'
 
-    - name: Asegurar que la red de Docker externa exista
+    # --------------------------------------------------------------------------
+    # Selección y Copia de docker-compose.override.yml según el entorno
+    # --------------------------------------------------------------------------
+    - name: Inyectar docker-compose.override.yml para Entorno Local (Netbook Atom)
+      ansible.builtin.template:
+        src: docker-compose.override.local.yml.j2
+        dest: "{{ project_dir }}/docker-compose.override.yml"
+        mode: '0644'
+      when: inventory_hostname in groups['nodos_atom']
+
+    - name: Inyectar docker-compose.override.yml para Entorno AWS (Nube)
+      ansible.builtin.template:
+        src: docker-compose.override.aws.yml.j2
+        dest: "{{ project_dir }}/docker-compose.override.yml"
+        mode: '0644'
+      when: inventory_hostname in groups['nodos_aws']
+
+    # --------------------------------------------------------------------------
+    # Tareas específicas por entorno antes de levantar contenedores
+    # --------------------------------------------------------------------------
+    - name: Asegurar que la red externa omni_agro_omnisens_net exista (Solo Local)
       community.docker.docker_network:
         name: omni_agro_omnisens_net
         state: present
         driver: bridge
+      when: inventory_hostname in groups['nodos_atom']
+      become: yes  # Se requiere privilegios para crear redes si es necesario
 
+    # --------------------------------------------------------------------------
+    # Ejecución de Docker Compose
+    # --------------------------------------------------------------------------
     - name: Compilar y desplegar contenedores con Docker Compose
       community.docker.docker_compose_v2:
         project_src: "{{ project_dir }}"
