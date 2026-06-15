@@ -1,24 +1,24 @@
 import { Pool } from 'pg';
-import { Kysely, PostgresDialect } from 'kysely';
+import { Kysely, PostgresDialect, Generated } from 'kysely';
 
 // Interfaz que mapea las tablas de la base de datos para Kysely (TypeScript)
 export interface Database {
   clients: {
-    client_id: number;
+    client_id: Generated<number>;
     client_name: string;
     business_tax_id: string | null;
-    created_at: Date;
-    updated_at: Date;
+    created_at: Generated<Date>;
+    updated_at: Generated<Date>;
     deleted_at: Date | null;
   };
   users: {
-    user_id: number;
+    user_id: Generated<number>;
     client_id: number;
     email: string;
     password_hash: string;
     user_role: string;
     full_name: string | null;
-    created_at: Date;
+    created_at: Generated<Date>;
     deleted_at: Date | null;
   };
   air_quality_data: {
@@ -43,10 +43,10 @@ export interface Database {
     mac_address: string;
     device_name: string | null;
     hmac_secret: string;
-    created_at: Date;
+    created_at: Generated<Date>;
     last_connection: Date | null;
     status: string;
-    is_active: boolean;
+    is_active: Generated<boolean>;
     deleted_at: Date | null;
   };
   aqi_hourly_avg: {
