@@ -86,7 +86,10 @@ Las medidas implementadas permiten:
 
 ✅ Validación e Integridad de Datos Documentada
 
+✅ Rotación de Credenciales y Gestión de Tokens Documentada
+
 🔄 Documentación en evolución junto con el desarrollo del proyecto.
+
 
 ---
 
