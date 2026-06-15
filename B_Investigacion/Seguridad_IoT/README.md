@@ -87,3 +87,28 @@ Las medidas implementadas permiten:
 ✅ Validación e Integridad de Datos Documentada
 
 🔄 Documentación en evolución junto con el desarrollo del proyecto.
+
+---
+
+### 📄 rotacion_credenciales.md
+
+Documenta la estrategia de gestión segura de credenciales y renovación de tokens implementada en OmniSens Industrial Suite.
+
+Contenido:
+
+* Política de rotación de credenciales.
+* Renovación periódica de tokens.
+* Automatización de cambios.
+* Revocación de credenciales comprometidas.
+* Gestión segura de accesos.
+* Aplicación en MQTT, APIs, Docker y Base de Datos.
+* Procedimientos documentados de respuesta ante incidentes.
+
+Objetivo:
+
+Reducir los riesgos asociados a la exposición de claves, contraseñas y tokens mediante la utilización de credenciales dinámicas y mecanismos de renovación controlados.
+
+Resultado esperado:
+
+Fortalecer la seguridad del sistema, minimizar el impacto de posibles filtraciones y garantizar una gestión segura de accesos dentro de la arquitectura OmniSens.
+
