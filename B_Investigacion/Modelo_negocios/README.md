@@ -36,4 +36,33 @@ Definir un ARPU coherente con la propuesta de valor y los costos operativos del 
 
 ✅ Estimación de ARPU documentada.
 
+✅ Estructura de Costos documentada.
+
 🔄 Documentación en evolución junto con el desarrollo del Business Model Canvas.
+
+---
+
+### 📄 estructura_costos.md
+
+Documenta la estructura de costos asociada al desarrollo y operación de OmniSens Industrial Suite.
+
+Contenido:
+
+- Costos de sensores y dispositivos.
+- Costos de infraestructura de comunicaciones.
+- Costos de servidores y servicios Cloud.
+- Costos de mantenimiento.
+- Costos energéticos.
+- Clasificación CAPEX y OPEX.
+
+Objetivo:
+
+Identificar y organizar los costos asociados al proyecto para evaluar su viabilidad financiera.
+
+Resultado esperado:
+
+Disponer de una estructura de costos clara y coherente con el modelo de negocio propuesto.
+
+--- 
+
+
