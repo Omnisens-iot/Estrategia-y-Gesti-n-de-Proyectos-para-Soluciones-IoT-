@@ -68,6 +68,7 @@ private:
     WiFiManagerParameter* _param_ldr;
     WiFiManagerParameter* _param_bh1750;
     WiFiManagerParameter* _param_dust;
+    WiFiManagerParameter* _param_mac;
 
     String _macAddress;
     String _hmacToken;

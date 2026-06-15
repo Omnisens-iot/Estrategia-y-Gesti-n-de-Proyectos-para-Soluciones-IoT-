@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { getDevices } from '../controllers/deviceController';
+import { getDevices, registerDevice } from '../controllers/deviceController';
 
 export default async function deviceRoutes(fastify: FastifyInstance) {
-  // Ruta protegida por JWT Multi-Tenant
+  // Rutas protegidas por JWT Multi-Tenant
   fastify.get('/', { preValidation: [fastify.authenticate] }, getDevices);
+  fastify.post('/', { preValidation: [fastify.authenticate] }, registerDevice);
 }

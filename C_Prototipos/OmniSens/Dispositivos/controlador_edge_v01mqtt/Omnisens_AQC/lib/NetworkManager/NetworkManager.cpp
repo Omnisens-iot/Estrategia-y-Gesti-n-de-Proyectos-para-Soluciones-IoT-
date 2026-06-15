@@ -326,10 +326,15 @@ void NetworkManager::loadConfig() {
     _param_bh1750 = new WiFiManagerParameter("bh1750", "Sensor luz digital", _en_bh1750 ? "1" : "0", 2, h_bh.c_str());
     _param_dust = new WiFiManagerParameter("dust", "Sensor de particulas PM10", _en_dust ? "1" : "0", 2, h_dust.c_str());
 
+    // Mostrar Dirección MAC en el Portal para poder registrarla
+    String macLabel = "<div style='margin-top:20px; padding:10px; background:#e2e8f0; border-radius:5px; text-align:center;'><b>Dirección MAC para Registro:</b><br><span style='font-family:monospace; font-size:16px; color:#0f172a;'>" + WiFi.macAddress() + "</span></div>";
+    _param_mac = new WiFiManagerParameter(macLabel.c_str());
+
     _wm.addParameter(_param_mq135);
     _wm.addParameter(_param_bmp280);
     _wm.addParameter(_param_aht25);
     _wm.addParameter(_param_ldr);
     _wm.addParameter(_param_bh1750);
     _wm.addParameter(_param_dust);
+    _wm.addParameter(_param_mac);
 }

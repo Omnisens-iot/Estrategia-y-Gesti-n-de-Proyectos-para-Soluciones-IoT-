@@ -3,6 +3,24 @@ import { Kysely, PostgresDialect } from 'kysely';
 
 // Interfaz que mapea las tablas de la base de datos para Kysely (TypeScript)
 export interface Database {
+  clients: {
+    client_id: number;
+    client_name: string;
+    business_tax_id: string | null;
+    created_at: Date;
+    updated_at: Date;
+    deleted_at: Date | null;
+  };
+  users: {
+    user_id: number;
+    client_id: number;
+    email: string;
+    password_hash: string;
+    user_role: string;
+    full_name: string | null;
+    created_at: Date;
+    deleted_at: Date | null;
+  };
   air_quality_data: {
     time: Date;
     device_id: string;

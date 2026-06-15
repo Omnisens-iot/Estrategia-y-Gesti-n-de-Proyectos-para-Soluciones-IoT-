@@ -42,6 +42,10 @@
               {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
             </button>
           </div>
+          <div class="text-center mt-4">
+            <span class="text-slate-400 text-sm">¿No tienes cuenta? </span>
+            <router-link to="/register" class="text-primary hover:text-accent text-sm font-medium">Registrarse</router-link>
+          </div>
         </form>
       </div>
     </div>
@@ -68,7 +72,7 @@ const handleLogin = async () => {
   error.value = ''
   
   try {
-    const res = await api.post('/login', { email: email.value, password: password.value })
+    const res = await api.post('/users/login', { email: email.value, password: password.value })
     authStore.setToken(res.data.token)
     router.push('/')
   } catch (err: any) {

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 import MainLayout from '../layouts/MainLayout.vue'
 import DashboardView from '../views/DashboardView.vue'
 import AnalyticsView from '../views/AnalyticsView.vue'
@@ -11,6 +12,7 @@ import BillingView from '../views/BillingView.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: LoginView },
+  { path: '/register', name: 'Register', component: RegisterView },
   {
     path: '/',
     component: MainLayout,
@@ -33,9 +35,12 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
-  if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
+  const publicPages = ['/login', '/register']
+  const authRequired = !publicPages.includes(to.path)
+
+  if (authRequired && !authStore.isAuthenticated()) {
     next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated()) {
+  } else if (!authRequired && authStore.isAuthenticated()) {
     next('/')
   } else {
     next()

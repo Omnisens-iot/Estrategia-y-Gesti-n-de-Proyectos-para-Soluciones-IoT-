@@ -5,6 +5,9 @@
         <h2 class="text-3xl font-extrabold text-white tracking-tight">Administración de Dispositivos</h2>
         <p class="text-sm text-slate-400 mt-1">Monitoreo de telemetría administrativa, estado de red y baterías.</p>
       </div>
+      <button @click="showRegisterModal = true" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-accent text-white text-sm font-semibold rounded-lg shadow-md transition-colors">
+        <Plus class="w-4 h-4" /> Registrar Nodo
+      </button>
     </div>
 
     <!-- Error state -->
@@ -84,12 +87,40 @@
         </table>
       </div>
     </div>
+
+    <!-- Modal Registrar Dispositivo -->
+    <div v-if="showRegisterModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="bg-dark border border-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-xl font-bold text-white mb-4">Registrar Nuevo Nodo</h3>
+        <form @submit.prevent="handleRegisterDevice" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1">ID del Dispositivo</label>
+            <input v-model="newDevice.device_id" required placeholder="Ej: AQC_003" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1">Dirección MAC</label>
+            <input v-model="newDevice.mac_address" required placeholder="Ej: c8:f0:9e:11:22:33" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white font-mono focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1">Nombre del Nodo</label>
+            <input v-model="newDevice.device_name" required placeholder="Ej: Oficina Principal" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+          </div>
+          <div v-if="registerError" class="text-red-400 text-sm mt-2">⚠️ {{ registerError }}</div>
+          <div class="flex gap-3 justify-end mt-6">
+            <button type="button" @click="showRegisterModal = false" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">Cancelar</button>
+            <button type="submit" :disabled="registering" class="px-4 py-2 bg-primary hover:bg-accent disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-md transition-colors">
+              {{ registering ? 'Guardando...' : 'Registrar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Cpu, BatteryMedium, BatteryLow, Battery } from 'lucide-vue-next'
+import { Cpu, BatteryMedium, BatteryLow, Battery, Plus } from 'lucide-vue-next'
 import api from '../services/api'
 
 interface Device {
@@ -103,6 +134,26 @@ interface Device {
 
 const devices = ref<Device[]>([])
 const error = ref('')
+
+const showRegisterModal = ref(false)
+const registerError = ref('')
+const registering = ref(false)
+const newDevice = ref({ device_id: '', mac_address: '', device_name: '' })
+
+const handleRegisterDevice = async () => {
+  registering.value = true
+  registerError.value = ''
+  try {
+    await api.post('/devices', newDevice.value)
+    showRegisterModal.value = false
+    newDevice.value = { device_id: '', mac_address: '', device_name: '' }
+    fetchDevices() // Recargar lista
+  } catch (err: any) {
+    registerError.value = err.response?.data?.error || 'Error al registrar dispositivo.'
+  } finally {
+    registering.value = false
+  }
+}
 
 const fetchDevices = async () => {
   try {

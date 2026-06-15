@@ -16,7 +16,9 @@ server.register(jwtPlugin);
 import deviceRoutes from './routes/deviceRoutes';
 import telemetryRoutes from './routes/telemetryRoutes';
 import actuatorRoutes from './routes/actuatorRoutes';
+import userRoutes from './routes/userRoutes';
 
+server.register(userRoutes, { prefix: '/api/users' });
 server.register(deviceRoutes, { prefix: '/api/devices' });
 server.register(telemetryRoutes, { prefix: '/api/telemetry' });
 server.register(actuatorRoutes, { prefix: '/api/devices' });
