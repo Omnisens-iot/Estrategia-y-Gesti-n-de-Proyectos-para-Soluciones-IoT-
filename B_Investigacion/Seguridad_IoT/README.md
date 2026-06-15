@@ -115,3 +115,52 @@ Resultado esperado:
 
 Fortalecer la seguridad del sistema, minimizar el impacto de posibles filtraciones y garantizar una gestión segura de accesos dentro de la arquitectura OmniSens.
 
+---
+
+### 📄 code_scanning.md
+
+Documenta la estrategia de análisis de seguridad aplicada al código fuente del proyecto.
+
+Contenido:
+
+- Code Scanning en GitHub.
+- Revisión del firmware ESP32.
+- Análisis de dependencias.
+- Identificación de vulnerabilidades.
+- Aplicación de correcciones.
+- Buenas prácticas de desarrollo seguro.
+
+Objetivo:
+
+Detectar y corregir vulnerabilidades de software antes de su despliegue.
+
+Resultado esperado:
+
+Incrementar la calidad, seguridad y confiabilidad del código fuente utilizado por OmniSens Industrial Suite.
+
+---
+
+### 📄 gestion_secretos.md
+
+Documenta la estrategia de protección de credenciales y gestión segura de secretos utilizada en OmniSens Industrial Suite.
+
+Contenido:
+
+- Identificación de credenciales críticas.
+- Eliminación de credenciales hardcodeadas.
+- Uso de variables de entorno.
+- Protección de accesos.
+- Escaneo automático de secretos.
+- Buenas prácticas de gestión de información sensible.
+
+Objetivo:
+
+Evitar la exposición de credenciales dentro del código fuente y proteger los componentes críticos de la infraestructura.
+
+Resultado esperado:
+
+Mantener el repositorio libre de datos sensibles y reducir riesgos asociados a accesos no autorizados.
+
+---
+
+
