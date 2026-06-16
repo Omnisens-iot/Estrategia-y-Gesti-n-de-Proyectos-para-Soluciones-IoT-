@@ -4,6 +4,9 @@
 
 OmniSens es un sistema orientado al monitoreo y control ambiental en entornos industriales. Utiliza sensores para medir variables críticas como temperatura, humedad, presión y luminosidad, y transmite estos datos mediante tecnología LoRa hacia un servidor en la nube, permitiendo monitoreo y gestión en tiempo real.
 
+<img width="578" height="472" alt="corte_modelo" src="https://github.com/user-attachments/assets/8c3f28d5-581b-48e7-906d-7a3b656a880b" />
+
+
 🧑‍💻 Integrantes
 
 | Nombre                        | GitHub                                 |
@@ -14,15 +17,6 @@ OmniSens es un sistema orientado al monitoreo y control ambiental en entornos in
 | Macarena Aylèn Carballo      | [@MacarenaAC](https://github.com/MacarenaAC) |
 | Raul Jara                    | [@r-j28](https://github.com/r-j28) |
 ---
-
-## 👨‍🏫 Profesores
-| Nombre                        | GitHub                                 |
-|------------------------------|----------------------------------------|
-| Mario Gonzalez               | [@mariogonzalezispc](https://github.com/mariogonzalezispc) |
-| Alejandro Di Marco           |                                          |
-| Ana Farias                   |                                          | 
-| Dante Violi                  |                                          |
-
 ## Descripción General
 
 El objetivo principal de OmniSens es implementar un sistema integral capaz de mantener condiciones óptimas de ambiente, garantizando la seguridad y calidad del aire. Para ello, el sistema incluye una serie de **controladores edge** que reciben los datos de los sensores y accionan dispositivos como extractores de aire, luces, alarmas sonoras y balizas luminosas.  
