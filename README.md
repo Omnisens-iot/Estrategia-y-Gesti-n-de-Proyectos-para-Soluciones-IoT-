@@ -1,8 +1,9 @@
-[![c491f1d4-f64d-4af9-8f3a-d395638ccc71.png](https://i.postimg.cc/VLDpSDfx/c491f1d4-f64d-4af9-8f3a-d395638ccc71.png)](https://postimg.cc/BXPMk51p)
+[![omnisens.jpg](https://i.postimg.cc/c48F2xk5/omnisens.jpg)](https://postimg.cc/2VrdBDD4)
 
 ## Omnisens-IoT ##
 
 OmniSens es un sistema orientado al monitoreo y control ambiental en entornos industriales. Utiliza sensores para medir variables críticas como temperatura, humedad, presión y luminosidad, y transmite estos datos mediante tecnología LoRa hacia un servidor en la nube, permitiendo monitoreo y gestión en tiempo real.
+
 
 <img width="578" height="472" alt="corte_modelo" src="https://github.com/user-attachments/assets/8c3f28d5-581b-48e7-906d-7a3b656a880b" />
 
@@ -66,7 +67,7 @@ El sistema está compuesto por:
 
 ---
 
-[![omnisens.jpg](https://i.postimg.cc/c48F2xk5/omnisens.jpg)](https://postimg.cc/2VrdBDD4)
+[![c491f1d4-f64d-4af9-8f3a-d395638ccc71.png](https://i.postimg.cc/VLDpSDfx/c491f1d4-f64d-4af9-8f3a-d395638ccc71.png)](https://postimg.cc/BXPMk51p)
 
 ## Omnisens ##
 
