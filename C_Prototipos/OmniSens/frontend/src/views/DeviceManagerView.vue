@@ -25,15 +25,15 @@
               <th class="px-6 py-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">MAC Address</th>
               <th class="px-6 py-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">Estado Red</th>
               <th class="px-6 py-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">Nivel de Batería (Diagnóstico)</th>
+              <th class="px-6 py-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800/60">
             <tr v-for="device in devices" :key="device.device_id" class="hover:bg-slate-900/20 transition-colors">
-              <!-- Info Dispositivo -->
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                   <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800 text-slate-400">
-                    <Cpu class="w-5 h-5" />
+                    <Cpu class="w-5 h-5"></Cpu>
                   </div>
                   <div>
                     <span class="font-bold text-white block text-sm">{{ device.device_name || 'Nodo Sin Nombre' }}</span>
@@ -42,12 +42,10 @@
                 </div>
               </td>
               
-              <!-- MAC Address -->
               <td class="px-6 py-4 text-sm text-slate-400 font-mono">
                 {{ device.mac_address }}
               </td>
               
-              <!-- Estado de Red -->
               <td class="px-6 py-4">
                 <span :class="device.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border">
                   <span :class="device.status === 'active' ? 'bg-emerald-400' : 'bg-slate-500'" class="w-1.5 h-1.5 rounded-full"></span>
@@ -55,7 +53,6 @@
                 </span>
               </td>
               
-              <!-- Batería -->
               <td class="px-6 py-4">
                 <div v-if="device.loadingBattery" class="flex items-center gap-2 text-xs text-slate-500">
                   <div class="w-3.5 h-3.5 border-2 border-slate-600 border-t-primary rounded-full animate-spin"></div>
@@ -63,9 +60,8 @@
                 </div>
                 
                 <div v-else-if="device.battery !== null" class="flex items-center gap-3">
-                  <!-- Icono de Batería Inteligente -->
                   <div class="flex items-center">
-                    <component :is="getBatteryIcon(device.battery)" class="w-5 h-5" />
+                    <component :is="getBatteryIcon(device.battery)" class="w-5 h-5"></component>
                   </div>
                   <div>
                     <span class="text-sm font-semibold text-slate-200">
@@ -78,9 +74,16 @@
                 </div>
                 
                 <div v-else class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
-                  <Battery class="w-4 h-4 text-slate-600 opacity-40" />
+                  <Battery class="w-4 h-4 text-slate-600 opacity-40"></Battery>
                   <span>Sin datos (Alimentación externa)</span>
                 </div>
+              </td>
+              
+              <td class="px-6 py-4 text-sm">
+                <button @click="openRawConsole(device)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded flex items-center gap-2 transition-colors">
+                  <Terminal class="w-4 h-4"></Terminal>
+                  <span>Consola Raw</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -115,12 +118,45 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal de Consola Raw -->
+    <div v-if="showRawConsole" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div class="bg-black border border-slate-700 rounded-lg w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl overflow-hidden font-mono">
+        <!-- Header de Consola -->
+        <div class="bg-slate-900 border-b border-slate-800 p-3 flex justify-between items-center shrink-0">
+          <div class="flex items-center gap-2">
+            <Terminal class="w-5 h-5 text-emerald-400" />
+            <span class="text-slate-300 font-bold text-sm">Helpdesk Raw Telemetry: {{ activeDevice?.device_id }}</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-xs text-slate-500 flex items-center gap-1">
+              <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              Auto-Refresh (3s)
+            </span>
+            <button @click="closeRawConsole" class="text-slate-400 hover:text-white">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        <!-- Log Area -->
+        <div class="flex-1 overflow-y-auto p-4 bg-black text-emerald-400 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
+          <div v-if="loadingRaw" class="text-slate-500 italic">Estableciendo conexión con la base de datos...</div>
+          <div v-else-if="rawLogs.length === 0" class="text-slate-500 italic">No hay telemetría registrada.</div>
+          <div v-else v-for="(log, idx) in rawLogs" :key="idx" class="mb-2 border-b border-slate-900 pb-2">
+            <span class="text-slate-500">[{{ new Date(log.time).toISOString() }}]</span>
+            <span class="text-blue-400 ml-2">DATA:</span>
+            {{ formatRawLog(log) }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Cpu, BatteryMedium, BatteryLow, Battery, Plus } from 'lucide-vue-next'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { Cpu, BatteryMedium, BatteryLow, Battery, Plus, Terminal, X } from 'lucide-vue-next'
 import api from '../services/api'
 
 interface Device {
@@ -197,14 +233,66 @@ const getBatteryPercentageStr = (voltage: number): string => {
 }
 
 // Determinar el icono según el nivel de carga
-const getBatteryIcon = (voltage: number) => {
-  const pct = ((voltage - 3.2) / (4.2 - 3.2)) * 100
-  if (pct >= 75) return Battery
-  if (pct >= 25) return BatteryMedium
-  return BatteryLow
+const getBatteryIcon = (volts: number) => {
+  if (volts >= 3.7) return BatteryMedium;
+  if (volts >= 3.3) return BatteryLow;
+  return Battery;
+}
+
+// ----------------------------------------------------
+// Lógica de la Consola Raw (Helpdesk)
+// ----------------------------------------------------
+const showRawConsole = ref(false)
+const activeDevice = ref<Device | null>(null)
+const rawLogs = ref<any[]>([])
+const loadingRaw = ref(false)
+let rawPollingInterval: number | null = null
+
+const fetchRawLogs = async () => {
+  if (!activeDevice.value) return
+  try {
+    const res = await api.get(`/telemetry/raw/${activeDevice.value.device_id}`)
+    rawLogs.value = res.data
+  } catch (err) {
+    console.error("Error fetching raw logs", err)
+  } finally {
+    loadingRaw.value = false
+  }
+}
+
+const openRawConsole = (device: Device) => {
+  activeDevice.value = device
+  showRawConsole.value = true
+  loadingRaw.value = true
+  rawLogs.value = []
+  
+  fetchRawLogs()
+  // Auto-refresh cada 3 segundos
+  rawPollingInterval = window.setInterval(fetchRawLogs, 3000)
+}
+
+const closeRawConsole = () => {
+  showRawConsole.value = false
+  activeDevice.value = null
+  if (rawPollingInterval) {
+    clearInterval(rawPollingInterval)
+    rawPollingInterval = null
+  }
+}
+
+const formatRawLog = (log: any) => {
+  // Quitamos la columna de tiempo y device_id para limpiar la vista de data payload
+  const { time, device_id, ...data } = log;
+  return JSON.stringify(data);
 }
 
 onMounted(() => {
   fetchDevices()
+})
+
+onUnmounted(() => {
+  if (rawPollingInterval) {
+    clearInterval(rawPollingInterval)
+  }
 })
 </script>

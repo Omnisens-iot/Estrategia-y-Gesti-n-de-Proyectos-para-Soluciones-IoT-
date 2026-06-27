@@ -37,6 +37,16 @@ export interface Database {
     r2: number | null;
     pwm: number | null;
   };
+  device_rules: {
+    rule_id: Generated<number>;
+    device_id: string;
+    metric: string;
+    threshold: number;
+    hysteresis: number;
+    action: string;
+    priority: number;
+    created_at: Generated<Date>;
+  };
   devices: {
     device_id: string;
     client_id: number | null;

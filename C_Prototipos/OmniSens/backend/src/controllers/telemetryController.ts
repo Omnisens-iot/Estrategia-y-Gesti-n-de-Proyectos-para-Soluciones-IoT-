@@ -35,14 +35,37 @@ export const getHistory = async (request: FastifyRequest, reply: FastifyReply) =
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - safeDays);
 
-    // 3. Consultar la VISTA MATERIALIZADA (aqi_hourly_avg)
-    // OBLIGATORIO: Evitar usar air_quality_data para periodos largos.
-    const history = await db.selectFrom('aqi_hourly_avg')
-      .selectAll()
-      .where('device_id', '=', deviceId)
-      .where('bucket', '>=', cutoffDate)
-      .orderBy('bucket', 'asc') // Orden cronológico para gráficos
-      .execute();
+    let history;
+
+    if (safeDays <= 1) {
+      // Para periodos cortos (24hs o menos), usar datos en vivo (crudos)
+      history = await db.selectFrom('air_quality_data')
+        .select([
+          'time as bucket',
+          'device_id',
+          'pm25 as avg_pm25',
+          'pm10 as avg_pm10',
+          'co2 as avg_co2',
+          'temp as avg_temp',
+          'hum as avg_hum',
+          'pres as avg_pres',
+          'l as avg_l',
+          'lux as avg_lux',
+          'battery as avg_battery'
+        ])
+        .where('device_id', '=', deviceId)
+        .where('time', '>=', cutoffDate)
+        .orderBy('time', 'asc')
+        .execute();
+    } else {
+      // Para periodos largos, consultar la VISTA MATERIALIZADA (aqi_hourly_avg)
+      history = await db.selectFrom('aqi_hourly_avg')
+        .selectAll()
+        .where('device_id', '=', deviceId)
+        .where('bucket', '>=', cutoffDate)
+        .orderBy('bucket', 'asc') // Orden cronológico para gráficos
+        .execute();
+    }
 
     reply.send(history);
   } catch (error) {
@@ -73,6 +96,38 @@ export const getNow = async (request: FastifyRequest, reply: FastifyReply) => {
     reply.send(latestData);
   } catch (error) {
     request.log.error(error);
-    reply.status(500).send({ error: 'Error interno obteniendo estado actual' });
+    return reply.status(500).send({ error: 'Error interno obteniendo el estado actual' });
+  }
+};
+
+export const getRawTelemetry = async (request: FastifyRequest, reply: FastifyReply) => {
+  const clientId = request.user.client_id;
+  const { deviceId } = request.params as TelemetryParams;
+
+  try {
+    // 1. Validar que el dispositivo le pertenezca al cliente
+    const device = await db.selectFrom('devices')
+      .select('device_id')
+      .where('device_id', '=', deviceId)
+      .where('client_id', '=', clientId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!device) {
+      return reply.status(404).send({ error: 'Dispositivo no encontrado o acceso denegado' });
+    }
+
+    // 2. Obtener las últimas 50 filas crudas ordenadas por tiempo descendente
+    const rawData = await db.selectFrom('air_quality_data')
+      .selectAll()
+      .where('device_id', '=', deviceId)
+      .orderBy('time', 'desc')
+      .limit(50)
+      .execute();
+
+    return reply.send(rawData);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ error: 'Error interno obteniendo telemetría cruda' });
   }
 };

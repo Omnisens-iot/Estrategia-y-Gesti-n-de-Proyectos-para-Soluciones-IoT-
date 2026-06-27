@@ -59,8 +59,8 @@ void SensorData::populateJson(JsonDocument& doc) {
 
     if (_batteryPin >= 0) {
         int raw = analogRead(_batteryPin);
-        // Divisor resistivo 100k/100k (factor de atenuación = 2.0). Referencia ADC de 3.3V.
-        float volt = (raw / 4095.0) * 3.3 * 2.0;
+        // Divisor resistivo 33k/10k (factor de atenuación = 4.3). Referencia ADC de 1.0V (0dB).
+        float volt = (raw / 4095.0) * 1.0 * 4.3;
         if (volt < 0.0) volt = 0.0;
         doc["battery"] = volt;
     }

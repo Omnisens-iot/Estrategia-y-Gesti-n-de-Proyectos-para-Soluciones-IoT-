@@ -13,8 +13,9 @@
 #include <LedIndicator.h>
 #include <SystemLogger.h>
 
-// Definición del tipo de CallBack para actuadores
+// Definición de tipos de CallBack
 typedef void (*ActuatorCallback)(bool r1, bool r2, uint8_t pwm);
+typedef void (*RulesCallback)(const JsonArray& rulesArray);
 
 class NetworkManager {
 public:
@@ -36,9 +37,10 @@ public:
     
     // Setters
     void setActuatorCallback(ActuatorCallback cb);
+    void setRulesCallback(RulesCallback cb);
     
-    // Portal Cautivo a demanda
-    void startCaptivePortal();
+    // Chequeo de Portal Cautivo al arranque (Boot Window)
+    void checkCaptivePortalBoot(uint8_t bootPin, uint32_t waitTimeMs = 5000);
     
     // Actualización OTA remota
     void performOTA(const char* url);
@@ -48,6 +50,7 @@ private:
     uint16_t _port;
     LedIndicator* _led;
     ActuatorCallback _actuatorCb = nullptr;
+    RulesCallback _rulesCb = nullptr;
     
     WiFiClientSecure _wifiClient;
     PubSubClient _mqttClient;
@@ -71,12 +74,14 @@ private:
     WiFiManagerParameter* _param_mac;
 
     String _macAddress;
+    String _deviceId;
     String _hmacToken;
 
     unsigned long _lastReconnectAttempt = 0;
     bool _portalRunning = false;
     
     void connectWiFi();
+    void syncTime();
     void connectMQTT();
     void mqttCallback(char* topic, byte* payload, unsigned int length);
     static void mqttCallbackWrapper(char* topic, byte* payload, unsigned int length);

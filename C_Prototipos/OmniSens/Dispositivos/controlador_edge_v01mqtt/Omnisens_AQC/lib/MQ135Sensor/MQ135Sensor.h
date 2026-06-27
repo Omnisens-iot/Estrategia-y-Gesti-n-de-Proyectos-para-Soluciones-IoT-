@@ -2,11 +2,11 @@
 #define MQ135SENSOR_H
 
 #include <Arduino.h>
-#include <MQ135.h>
+#include <MQUnifiedsensor.h>
 
 class MQ135Sensor {
 private:
-    MQ135 mq135;
+    MQUnifiedsensor mq135;
     const int NUM_READINGS = 10;
     float mq135Readings[10];
     int mq135ReadIndex = 0;

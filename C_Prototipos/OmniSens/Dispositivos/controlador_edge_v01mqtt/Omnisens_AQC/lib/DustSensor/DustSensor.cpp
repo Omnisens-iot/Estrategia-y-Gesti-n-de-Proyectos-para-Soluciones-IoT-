@@ -7,7 +7,7 @@ DustSensor::DustSensor(uint8_t aoutPin, uint8_t iledPin) {
 
 void DustSensor::begin() {
     pinMode(_iledPin, OUTPUT);
-    digitalWrite(_iledPin, HIGH); // Apagado por defecto (PNP / HIGH to disable)
+    digitalWrite(_iledPin, LOW); // Apagado por defecto (Conexión directa, sin PNP)
     pinMode(_aoutPin, INPUT);
 }
 
@@ -16,8 +16,8 @@ float DustSensor::readDensity(uint8_t samples) {
     float sumDensity = 0.0;
 
     for (uint8_t i = 0; i < samples; i++) {
-        // 1. Encender el LED IR (Nivel BAJO si se usa circuito típico con transistor PNP)
-        digitalWrite(_iledPin, LOW);
+        // 1. Encender el LED IR (Nivel ALTO porque se conectó directo sin transistor)
+        digitalWrite(_iledPin, HIGH);
         delayMicroseconds(samplingTime);
 
         // 2. Leer el valor analógico
@@ -25,12 +25,12 @@ float DustSensor::readDensity(uint8_t samples) {
 
         // 3. Apagar el LED IR
         delayMicroseconds(deltaTime);
-        digitalWrite(_iledPin, HIGH);
+        digitalWrite(_iledPin, LOW);
         delayMicroseconds(sleepTime);
 
-        // 4. Calcular voltaje (ESP32 ADC es de 12 bits, 0-4095. Referencia ~3.3V)
-        // Nota: La atenuación del ESP32 por defecto permite hasta ~3.3V.
-        float calcVoltage = voMeasured * (3.3 / 4095.0);
+        // 4. Calcular voltaje (ESP32 ADC es de 12 bits, 0-4095. Referencia ~1.0V a 0dB)
+        // Nota: El divisor resistivo físico es 38.6k/10k (factor = 4.86)
+        float calcVoltage = voMeasured * (1.0 / 4095.0) * 4.86;
 
         // 5. Calcular densidad en mg/m3 según datasheet (0.17 * V - 0.1)
         // Ecuación típica de calibración de Chris Nafis para este sensor

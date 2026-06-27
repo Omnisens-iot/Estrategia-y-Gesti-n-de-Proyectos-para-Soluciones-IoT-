@@ -1,27 +1,29 @@
 #include "NetworkManager.h"
 #include <SystemLogger.h>
+#include <time.h>
 
 // Placeholder para CA Cert
 const char* rootCACertificate = \
 "-----BEGIN CERTIFICATE-----\n" \
-"MIICiTCCAg+gAwIBAgIQH0evqm1B2lIAAAAAAAAANjAKBggqhkjOPQQDAzBSMQsw\n" \
-"CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMSwwKgYDVQQDEyNEaWdp\n" \
-"Q2VydCBHbG9iYWwgUm9vdCBHMyBFQ0MgU0hBMzg0MB4XDTIxMDQwODEyMTE1MVoX\n" \
-"DTI2MDQwODEyMTExNVowSjELMAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0\n" \
-"IEluYzEkMCIGA1UEAxMbRGlnaUNlcnQgVExTIEVDQyBTSEEzODQgRzQwWTATBgcq\n" \
-"hkjOPQIBBggqhkjOPQMBBwNCAAR1/7yX9X5HnF9Jvj194f42I1I35r+h8p51T83w\n" \
-"Gf5n0980r/n+7E2E0aXq6B+tF6K1p2vO1o2QnL1P1bQO9C7Co4IBXTCCAVkwHQYD\n" \
-"VR0OBBYEFN/Q/M29Z11P2T1fM69R6lP7fW9JMB8GA1UdIwQYMBaAFL3Iwwx7U2f1\n" \
-"E8f5n7T8Q5b4n5v5MBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgGG\n" \
-"MDMGA1UdHwQsMCowKKAmoCSGImh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9HMy1S\n" \
-"b290LmNybDBtBggrBgEFBQcBAQRhMF8wJgYIKwYBBQUHMAGGGmh0dHA6Ly9vY3Nw\n" \
-"LmRpZ2ljZXJ0LmNvbTA1BggrBgEFBQcwAoYpaHR0cDovL2NhY2VydHMuZGlnaWNl\n" \
-"cnQuY29tL0czLVJvb3QuY3J0MHcGA1UdIARwMG4wZAYKYIZIAYb9bAIBBDBWMCMG\n" \
-"CCsGAQUFBwIBFhdodHRwczovL3d3dy5kaWdpY2VydC5jb20vQ1BTMC8GCCsGAQUF\n" \
-"BwICMCMaIUFueSB1c2Ugb2YgdGhpcyBDZXJ0aWZpY2F0ZSBjb25zMAMGA1UdJwQC\n" \
-"MAAwCgYIKoZIzj0EAwMDZwAwZAIwP4T9Vv44sI9X7u1Z2U4r8o+n8d5L9v8J9f7m\n" \
-"P7K3/8k+P9E9L5B5V1P0P4c9R5b5AjBv6N5b1L8Z9P9O9R2s+T9O9r+u+d8P7m\n" \
-"9X5HnF9Jvj194f42I1I35r+h8p51T83w==\n" \
+"MIIDbzCCAlegAwIBAgIUT39mJ/NjufseQyTmiASomEgtLG8wDQYJKoZIhvcNAQEL\n" \
+"BQAwRzELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExETAPBgNVBAoMCE9t\n" \
+"bmlTZW5zMRMwEQYDVQQDDApPbW5pU2Vuc0NBMB4XDTI2MDYxNjA2MDUwM1oXDTM2\n" \
+"MDYxMzA2MDUwM1owRzELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExETAP\n" \
+"BgNVBAoMCE9tbmlTZW5zMRMwEQYDVQQDDApPbW5pU2Vuc0NBMIIBIjANBgkqhkiG\n" \
+"9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2i8t/geVCUZ0+SFl8cpaoBR7dXx1ujJVshDu\n" \
+"Mel4HFDqCIxzqGvFJEbdeerbnfMvln0O3knIb8e1YjsEdG8IlBYugCCKAAb328ve\n" \
+"bKBsNOMN907/fBoEKXuHyNdsNjTWr05wEqqDj4JMlfB+3KxiA3kZVIpcGv1IReQp\n" \
+"N5FVsH1R6UmBWClnU7vVzL+jFGUngiEbu7HZbpl9VqFbroDfybuphhPM05S6rGuE\n" \
+"Iom7MZBCVkgUKsQjZGmarfIU5hxMZDHMVhA7jKNnkDvrcQGRhkspX3Ib0J28vQZg\n" \
+"bMEhM0KPc/eJ1J38Dya7+h8mC6Es/K6tXFe2+F3YFB2FX5yFMwIDAQABo1MwUTAd\n" \
+"BgNVHQ4EFgQUoeIIBK3s4G/3K1rEamD+RvH1GjEwHwYDVR0jBBgwFoAUoeIIBK3s\n" \
+"4G/3K1rEamD+RvH1GjEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC\n" \
+"AQEAKDgGeaQnPeO6X8BIwEb5t+CBt5NttJdgBJzK7SKS8+/ZKFTmtLn+WdgBp94g\n" \
+"mBD8i+fOYZhl73DW3kCVttHYV0EyLvokeXQmiq0fVMeQ0ktYgl+DyuWtNc62Kwsm\n" \
+"xCtIrpl2epZ09rb7JncagimtTANBHLF6gIDpr7eWZmhNqZtCtIUn6NLFpdblxMiG\n" \
+"AVzvcdknbWMP4DGiKua/wiAUBDj42xWI4qkgue9ErpIwwkPXg75GBexc1PgfFCJc\n" \
+"y7wUyHlXmCz8EiBlfRWqKdWxN6/qfe/XYgUKzr1zu+azJnPv+LSG9mFycvKCq+PN\n" \
+"9IdyVsJbVJhFQ1/eJ1IWLjyUYQ==\n" \
 "-----END CERTIFICATE-----\n";
 
 NetworkManager* globalNetworkManager = nullptr;
@@ -33,7 +35,14 @@ NetworkManager::NetworkManager(const char* broker, uint16_t port, LedIndicator* 
 
 void NetworkManager::begin() {
     SystemLogger::begin(); // Inicializar estado de logs
-    _wifiClient.setCACert(rootCACertificate);
+    
+    // IMPORTANTE: mbedTLS en ESP32 tiene un bug/limitacion conocida al validar 
+    // direcciones IP directas en el campo SAN del certificado.
+    // Para producción, se recomienda usar un dominio real (ej. mqtt.omnisens.com).
+    // Por ahora, como conectamos por IP, usamos setInsecure() para MQTTS.
+    // _wifiClient.setCACert(rootCACertificate); 
+    _wifiClient.setInsecure();
+
     _mqttClient.setClient(_wifiClient);
     _mqttClient.setServer(_broker, _port);
     _mqttClient.setCallback(NetworkManager::mqttCallbackWrapper);
@@ -41,6 +50,7 @@ void NetworkManager::begin() {
 
     _macAddress = WiFi.macAddress();
     _macAddress.replace(":", "");
+    SystemLogger::info(String("Direccion MAC local (formato MQTT): ") + _macAddress);
 
     _prefs.begin("omnisens", false);
     _hmacToken = _prefs.getString("hmac_token", "");
@@ -52,10 +62,15 @@ void NetworkManager::begin() {
     _wm.setSaveConfigCallback(NetworkManager::saveConfigCallbackWrapper);
 
     connectWiFi();
+    syncTime(); // Sincronizar reloj para poder validar los certificados TLS
 }
 
 void NetworkManager::setActuatorCallback(ActuatorCallback cb) {
     _actuatorCb = cb;
+}
+
+void NetworkManager::setRulesCallback(RulesCallback cb) {
+    _rulesCb = cb;
 }
 
 void NetworkManager::loop() {
@@ -83,12 +98,45 @@ void NetworkManager::loop() {
     }
 }
 
-void NetworkManager::startCaptivePortal() {
-    SystemLogger::info("Iniciando Portal Cautivo a demanda...");
-    _led->setMode(LED_AP_MODE);
-    _wm.setConfigPortalBlocking(false);
-    _wm.startConfigPortal("Omnisens-Setup");
-    _portalRunning = true;
+void NetworkManager::checkCaptivePortalBoot(uint8_t bootPin, uint32_t waitTimeMs) {
+    SystemLogger::info(String("Tienes ") + String(waitTimeMs / 1000) + " segundos para presionar BOOT y entrar al Portal Cautivo...");
+    
+    uint32_t startMs = millis();
+    bool triggerPortal = false;
+    
+    while (millis() - startMs < waitTimeMs) {
+        // Parpadeo rápido para indicar la ventana de tiempo
+        if ((millis() / 100) % 2 == 0) {
+            _led->setMode(LED_AP_MODE); // Utilizar el color del portal (ej. azul)
+        } else {
+            _led->setMode(LED_OFF);
+        }
+        _led->update();
+        
+        if (digitalRead(bootPin) == LOW) {
+            triggerPortal = true;
+            break;
+        }
+        delay(10); // Pequeño delay para no saturar
+    }
+    
+    if (triggerPortal) {
+        SystemLogger::info("Boton presionado. Iniciando Portal Cautivo BLOQUEANTE.");
+        _led->setMode(LED_AP_MODE);
+        _led->update();
+        
+        // El portal bloquea la ejecución hasta que el usuario guarda credenciales o sale
+        _wm.setConfigPortalBlocking(true); 
+        _wm.startConfigPortal("Omnisens-Setup");
+        
+        SystemLogger::info("Saliendo del Portal Cautivo. Reiniciando el ESP32 para aplicar cambios...");
+        delay(1000);
+        ESP.restart(); // Reiniciar siempre después del portal para aplicar cambios limpiamente
+    } else {
+        SystemLogger::info("Tiempo expirado. Iniciando modo normal.");
+        _led->setMode(LED_OFF);
+        _led->update();
+    }
 }
 
 bool NetworkManager::isConnected() {
@@ -99,10 +147,38 @@ void NetworkManager::connectWiFi() {
     SystemLogger::info("Conectando a WiFi...");
     _led->setMode(LED_CONNECTING);
     
+    // Configurar timeouts del portal cautivo de emergencia
+    _wm.setConnectTimeout(20); // 20 segundos para intentar conectar al AP guardado
+    _wm.setConfigPortalTimeout(120); // 2 minutos máximo si levanta el portal de emergencia
+    
     if (_wm.autoConnect("Omnisens-Setup")) {
         SystemLogger::info("WiFi Conectado!");
     } else {
-        SystemLogger::error("No se pudo conectar a WiFi. Usa el boton para Portal Cautivo.");
+        SystemLogger::error("Fallo la conexion o se agoto el tiempo del Portal de Emergencia. Reiniciando...");
+        delay(2000);
+        ESP.restart();
+    }
+}
+
+void NetworkManager::syncTime() {
+    SystemLogger::info("Sincronizando reloj por NTP (Requerido para TLS)...");
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    
+    time_t now = time(nullptr);
+    int retries = 0;
+    while (now < 24 * 3600 && retries < 15) { // Esperar hasta que el año sea > 1970
+        delay(500);
+        now = time(nullptr);
+        retries++;
+    }
+    
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        char timeStringBuff[50];
+        strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+        SystemLogger::info(String("Reloj sincronizado: ") + timeStringBuff);
+    } else {
+        SystemLogger::error("Fallo la sincronizacion NTP.");
     }
 }
 
@@ -226,6 +302,11 @@ void NetworkManager::mqttCallbackWrapper(char* topic, byte* payload, unsigned in
 void NetworkManager::mqttCallback(char* topic, byte* payload, unsigned int length) {
     String t = String(topic);
     
+    // Loguear ABSOLUTAMENTE TODO lo que entra
+    String debugMsg = ">>> [MQTT] Llego mensaje al topico: " + t;
+    SystemLogger::debug(debugMsg.c_str());
+    Serial.println(debugMsg);
+    
     String responseTopic = "aqi/provisioning/response/" + _macAddress;
     String otaTopic = "aqi/commands/" + _macAddress + "/ota";
     String actuatorsTopic = "aqi/commands/" + _macAddress + "/actuators";
@@ -256,6 +337,12 @@ void NetworkManager::mqttCallback(char* topic, byte* payload, unsigned int lengt
             SystemLogger::setDebug(debugMode);
             // Actualizar WiFiManager debug
             _wm.setDebugOutput(debugMode);
+        }
+        if (doc.containsKey("rules")) {
+            SystemLogger::info("Recibida nueva configuracion de Motor de Reglas (Edge)");
+            if (_rulesCb) {
+                _rulesCb(doc["rules"].as<JsonArray>());
+            }
         }
     } else if (t == otaTopic) {
         if (doc.containsKey("url")) {

@@ -19,7 +19,20 @@ export const getDevices = async (request: FastifyRequest, reply: FastifyReply) =
       .where('deleted_at', 'is', null)
       .execute();
 
-    reply.send(devices);
+    const devicesWithStatus = devices.map(device => {
+      let isOnline = false;
+      if (device.last_connection) {
+        // Considerar offline si no hay datos en los últimos 5 minutos
+        const diffMinutes = (new Date().getTime() - new Date(device.last_connection).getTime()) / 60000;
+        isOnline = diffMinutes <= 5;
+      }
+      return {
+        ...device,
+        status: isOnline ? 'active' : 'inactive'
+      };
+    });
+
+    reply.send(devicesWithStatus);
   } catch (error) {
     request.log.error(error);
     reply.status(500).send({ error: 'Error interno obteniendo dispositivos' });
@@ -41,7 +54,7 @@ export const registerDevice = async (request: FastifyRequest, reply: FastifyRepl
     const result = await db.insertInto('devices')
       .values({
         device_id,
-        mac_address,
+        mac_address: mac_address.toUpperCase().replace(/:/g, ''),
         device_name: device_name || 'Nuevo Nodo',
         hmac_secret,
         client_id: clientId,

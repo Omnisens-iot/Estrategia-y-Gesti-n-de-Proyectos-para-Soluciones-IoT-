@@ -40,10 +40,12 @@ export function setupMqttSubscriber() {
         
         if (!mac_address || !timestamp) return;
 
+        const normalizedMac = mac_address.toUpperCase().replace(/:/g, '');
+
         // Verificar que el dispositivo exista y no esté borrado
         const device = await db.selectFrom('devices')
           .selectAll()
-          .where('mac_address', '=', mac_address)
+          .where('mac_address', '=', normalizedMac)
           .where('deleted_at', 'is', null) // OBLIGATORIO: Ignorar si fue borrado lógicamente
           .executeTakeFirst();
 
@@ -80,8 +82,16 @@ export function setupMqttSubscriber() {
       // ----------------------------------------------------------------------
       if (topic.startsWith('aqi/telemetry/')) {
         const topicParts = topic.split('/');
-        const deviceId = topicParts[2];
-        if (!deviceId) return;
+        const identifier = topicParts[2];
+        if (!identifier) return;
+
+        // Traducir el identifier (puede ser la MAC address) al device_id real
+        const device = await db.selectFrom('devices')
+          .select('device_id')
+          .where('mac_address', '=', identifier.toUpperCase().replace(/:/g, ''))
+          .executeTakeFirst();
+          
+        const actualDeviceId = device ? device.device_id : identifier;
         
         const payload = JSON.parse(message.toString());
         
@@ -90,7 +100,7 @@ export function setupMqttSubscriber() {
           await db.insertInto('air_quality_data')
             .values({
               time: new Date(),
-              device_id: deviceId,
+              device_id: actualDeviceId,
               pm25: payload.pm25 !== undefined ? payload.pm25 : -1.0,
               pm10: payload.pm10 !== undefined ? payload.pm10 : -1.0,
               co2: payload.co2 !== undefined ? payload.co2 : null,
@@ -105,10 +115,16 @@ export function setupMqttSubscriber() {
               pwm: payload.pwm !== undefined ? payload.pwm : null
             })
             .execute();
+            
+          // Marcar el dispositivo como activo y actualizar última conexión
+          await db.updateTable('devices')
+            .set({ status: 'active', last_connection: new Date() })
+            .where('device_id', '=', actualDeviceId)
+            .execute();
           
-          console.log(`💾 Telemetría guardada para dispositivo: ${deviceId}`);
+          console.log(`💾 Telemetría guardada para dispositivo: ${actualDeviceId} (desde tópico MAC: ${identifier})`);
         } else {
-          console.warn(`⚠️ Payload incompleto descartado para dispositivo: ${deviceId}`);
+          console.warn(`⚠️ Payload incompleto descartado para dispositivo: ${actualDeviceId}`);
         }
       }
     } catch (error) {

@@ -126,13 +126,15 @@ const drawHistory = async () => {
       }
     })
     
-    // Si la API no retorna datos, cargamos mock data adaptada
+    // Si no hay datos, limpiamos el gráfico
     if (data.length === 0) {
-      generateMockData(data)
+      if (chart) {
+        chart.clear()
+      }
+      // Opcional: Podríamos mostrar un mensaje "Sin datos" aquí
     }
   } catch (err) {
-    console.warn('Fallo al obtener historial de la API. Generando simulación temporal.')
-    generateMockData(data)
+    console.warn('Fallo al obtener historial de la API.')
   } finally {
     loading.value = false
     nextTick(() => {
@@ -141,34 +143,7 @@ const drawHistory = async () => {
   }
 }
 
-// Generador de mock data si el servidor TimescaleDB está offline o vacío
-const generateMockData = (data: [number, number][]) => {
-  const points = selectedRange.value === '1' ? 24 : selectedRange.value === '7' ? 84 : 180
-  const hoursStep = selectedRange.value === '1' ? 1 : selectedRange.value === '7' ? 2 : 4
-  const now = new Date().getTime()
-  
-  let baseVal = 20
-  let amplitude = 5
-  
-  switch(selectedMetric.value) {
-    case 'temp': baseVal = 22; amplitude = 4; break;
-    case 'hum': baseVal = 50; amplitude = 15; break;
-    case 'pres': baseVal = 1011; amplitude = 5; break;
-    case 'co2': baseVal = 420; amplitude = 30; break;
-    case 'pm10': baseVal = 15; amplitude = 8; break;
-    case 'lux': baseVal = 250; amplitude = 180; break;
-  }
-
-  for (let i = 0; i < points; i++) {
-    const t = now - (points - i) * hoursStep * 3600000
-    // Simular variación cíclica diurna bonita
-    const cycle = Math.sin((i / (points/2)) * Math.PI * 2)
-    const val = +(baseVal + cycle * amplitude + (Math.random() - 0.5) * (amplitude/3)).toFixed(1)
-    
-    // Evitar valores negativos incoherentes
-    data.push([t, val < 0 ? 0 : val])
-  }
-}
+// Eliminado generateMockData por requerimiento de producción
 
 // Renderizar el gráfico con ECharts
 const renderChart = (data: [number, number][], metricObj: typeof metrics[0]) => {

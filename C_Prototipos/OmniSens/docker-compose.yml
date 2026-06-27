@@ -32,6 +32,7 @@ services:
     volumes:
       - emqx_data:/opt/emqx/data
       - ./configuraciones/emqx_acl.conf:/opt/emqx/etc/acl.conf:ro
+      - ./configuraciones/certs:/opt/emqx/etc/certs:ro
     networks:
       - omnisens_net
     restart: unless-stopped
