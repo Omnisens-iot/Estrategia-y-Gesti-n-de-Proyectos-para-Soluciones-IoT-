@@ -17,11 +17,13 @@ import deviceRoutes from './routes/deviceRoutes';
 import telemetryRoutes from './routes/telemetryRoutes';
 import actuatorRoutes from './routes/actuatorRoutes';
 import userRoutes from './routes/userRoutes';
+import ruleRoutes from './routes/ruleRoutes';
 
 server.register(userRoutes, { prefix: '/api/users' });
 server.register(deviceRoutes, { prefix: '/api/devices' });
 server.register(telemetryRoutes, { prefix: '/api/telemetry' });
 server.register(actuatorRoutes, { prefix: '/api/devices' });
+server.register(ruleRoutes, { prefix: '/api/rules' });
 
 // Endpoint público de salud
 server.get('/health', async () => {

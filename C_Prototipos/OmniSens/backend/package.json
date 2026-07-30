@@ -18,10 +18,16 @@
   "license": "ISC",
   "dependencies": {
     "@fastify/jwt": "^10.0.0",
+    "@types/json2csv": "^5.0.7",
+    "@types/node-telegram-bot-api": "^0.64.15",
+    "@types/pdfkit": "^0.17.6",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
+    "json2csv": "^6.0.0-alpha.2",
     "kysely": "^0.28.17",
     "mqtt": "^5.15.1",
+    "node-telegram-bot-api": "^1.2.0",
+    "pdfkit": "^0.19.1",
     "pg": "^8.20.0"
   },
   "devDependencies": {

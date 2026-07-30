@@ -45,6 +45,8 @@ export interface Database {
     hysteresis: number;
     action: string;
     priority: number;
+    chat_id: string | null;
+    condition: string | null;
     created_at: Generated<Date>;
   };
   devices: {

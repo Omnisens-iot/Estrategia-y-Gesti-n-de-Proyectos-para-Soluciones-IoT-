@@ -1,7 +1,7 @@
 import * as mqtt from 'mqtt';
 import * as crypto from 'crypto';
 import { db } from '../config/db';
-
+import { sendTelegramAlert } from './telegramBot';
 let mqttClient: mqtt.MqttClient | null = null;
 
 export function setupMqttSubscriber() {
@@ -123,6 +123,37 @@ export function setupMqttSubscriber() {
             .execute();
           
           console.log(`💾 Telemetría guardada para dispositivo: ${actualDeviceId} (desde tópico MAC: ${identifier})`);
+
+          // ----------------------------------------------------------------------
+          // Evaluación de Reglas (Triggers) para Alertas de Telegram
+          // ----------------------------------------------------------------------
+          try {
+            const rules = await db.selectFrom('device_rules')
+              .selectAll()
+              .where('device_id', '=', actualDeviceId)
+              .execute();
+
+            for (const rule of rules) {
+              if (!rule.chat_id || !rule.condition) continue;
+              
+              const value = payload[rule.metric];
+              if (value === undefined || value === null) continue;
+              
+              let isTriggered = false;
+              if (rule.condition === '>' && value > rule.threshold) isTriggered = true;
+              else if (rule.condition === '<' && value < rule.threshold) isTriggered = true;
+              else if (rule.condition === '==' && value == rule.threshold) isTriggered = true;
+              else if (rule.condition === '>=' && value >= rule.threshold) isTriggered = true;
+              else if (rule.condition === '<=' && value <= rule.threshold) isTriggered = true;
+              
+              if (isTriggered) {
+                const msg = `⚠️ *Alerta OmniSens*\nEl dispositivo \`${actualDeviceId}\` superó el umbral configurado.\n\n*Métrica:* ${rule.metric}\n*Valor actual:* ${value}\n*Condición:* ${rule.condition} ${rule.threshold}`;
+                sendTelegramAlert(rule.chat_id, msg);
+              }
+            }
+          } catch (e) {
+            console.error('Error evaluando reglas de Telegram:', e);
+          }
         } else {
           console.warn(`⚠️ Payload incompleto descartado para dispositivo: ${actualDeviceId}`);
         }

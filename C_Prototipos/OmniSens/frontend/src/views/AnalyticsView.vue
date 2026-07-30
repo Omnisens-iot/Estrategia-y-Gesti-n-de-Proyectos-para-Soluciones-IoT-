@@ -40,11 +40,40 @@
       <div v-if="loading" class="absolute inset-0 bg-dark/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
         <div class="flex flex-col items-center gap-3">
           <div class="w-10 h-10 border-4 border-slate-700 border-t-primary rounded-full animate-spin"></div>
-          <span class="text-sm font-bold text-slate-300">Cargando datos históricos...</span>
+          <span class="text-sm font-bold text-slate-300">Cargando datos...</span>
         </div>
       </div>
       
       <div ref="chartRef" class="w-full h-full min-h-[380px]"></div>
+    </div>
+
+    <!-- Modal para Alerta de Telegram -->
+    <div v-if="showTriggerModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div class="bg-dark border border-slate-700 rounded-xl max-w-md w-full p-6 shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-2">Configurar Alerta de Telegram</h3>
+        <p class="text-sm text-slate-400 mb-4">
+          Se enviará un mensaje a Telegram cuando <b>{{ selectedMetricLabel }}</b> cruce el umbral de <b>{{ pendingThreshold }}</b>.
+        </p>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-300 mb-1">Chat ID de Telegram</label>
+          <input v-model="telegramChatId" type="text" placeholder="Ej: 123456789" class="w-full bg-[#16223f] border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-primary focus:border-primary">
+          <p class="text-xs text-slate-500 mt-1">Envía "/start" al bot <b>@OmnisensBot</b> para obtener tu Chat ID.</p>
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-slate-300 mb-1">Condición</label>
+          <select v-model="triggerCondition" class="w-full bg-[#16223f] border border-slate-600 text-white rounded-lg px-3 py-2">
+            <option value=">">Mayor que (>)</option>
+            <option value="<">Menor que (<)</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <button @click="cancelTrigger" class="px-4 py-2 rounded-lg font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700">Cancelar</button>
+          <button @click="saveTrigger" class="px-4 py-2 rounded-lg font-semibold text-white bg-primary hover:bg-primary/90">Guardar Alerta</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -64,6 +93,13 @@ const selectedDeviceId = ref('')
 const selectedMetric = ref('temp')
 const selectedRange = ref('1') // En días
 const loading = ref(false)
+
+// Estados para Triggers
+const showTriggerModal = ref(false)
+const telegramChatId = ref('')
+const pendingThreshold = ref(0)
+const triggerCondition = ref('>')
+const selectedMetricLabel = ref('')
 
 const ranges = [
   { label: '24 Horas', value: '1' },
@@ -131,7 +167,6 @@ const drawHistory = async () => {
       if (chart) {
         chart.clear()
       }
-      // Opcional: Podríamos mostrar un mensaje "Sin datos" aquí
     }
   } catch (err) {
     console.warn('Fallo al obtener historial de la API.')
@@ -143,7 +178,120 @@ const drawHistory = async () => {
   }
 }
 
-// Eliminado generateMockData por requerimiento de producción
+// ----------------------------------------------------
+// Exportación de Datos
+// ----------------------------------------------------
+const exportData = (format: 'csv' | 'pdf') => {
+  if (!chart || !selectedDeviceId.value) return
+  
+  // Obtener el rango visible actual del dataZoom
+  const option = chart.getOption() as any
+  let start = new Date()
+  let end = new Date()
+
+  if (option.dataZoom && option.dataZoom.length > 0) {
+    const dz = option.dataZoom[0]
+    // dz.startValue y dz.endValue son timestamps si el xAxis es tipo time
+    start = new Date(dz.startValue)
+    end = new Date(dz.endValue)
+  } else {
+    // Fallback: usar el rango completo seleccionado en los botones
+    start.setDate(start.getDate() - parseInt(selectedRange.value))
+  }
+
+  // Descargar archivo (se abre en nueva pestaña para iniciar descarga)
+  const url = `${api.defaults.baseURL}/telemetry/export/${selectedDeviceId.value}?startDate=${start.toISOString()}&endDate=${end.toISOString()}&format=${format}`
+  window.open(url, '_blank')
+}
+
+// ----------------------------------------------------
+// Gestión de Alertas Gráficas
+// ----------------------------------------------------
+const addTriggerMode = () => {
+  if (!chart) return
+  
+  // Añadir un markLine temporal y draggable al gráfico
+  const metricObj = metrics.find(m => m.value === selectedMetric.value)!
+  const currentOption = chart.getOption() as any
+  const series = currentOption.series[0]
+  
+  const currentYMax = currentOption.yAxis[0].max || 50 // Estimado
+  const defaultThreshold = 30 // Valor inicial
+
+  series.markLine = {
+    animation: true,
+    data: [
+      {
+        yAxis: defaultThreshold,
+        name: 'Arrastra para fijar alerta'
+      }
+    ],
+    label: { formatter: 'Nueva Alerta', position: 'end' },
+    lineStyle: { color: '#ef4444', type: 'solid', width: 2 }
+  }
+
+  // Habilitar Graphic component para hacerlo arrastrable
+  currentOption.graphic = {
+    type: 'group',
+    draggable: true,
+    ondragend: function (this: any) {
+      // Capturar la posición Y del drop y convertirla al valor del eje
+      const pos = chart!.convertFromPixel({ seriesIndex: 0 }, [this.x, this.y])
+      const newThreshold = +pos[1].toFixed(1)
+      
+      // Actualizar markLine
+      series.markLine.data[0].yAxis = newThreshold
+      chart!.setOption({ series: [series] })
+      
+      // Abrir Modal
+      pendingThreshold.value = newThreshold
+      selectedMetricLabel.value = metricObj.label
+      showTriggerModal.value = true
+    },
+    children: [
+      {
+        type: 'rect',
+        z: 100,
+        shape: { width: 100, height: 20 },
+        style: { fill: '#ef4444', text: 'Arrastrame', textFill: '#fff' },
+        invisible: false
+      }
+    ]
+  }
+
+  // Posicionar el graphic sobre la línea
+  const point = chart.convertToPixel({ seriesIndex: 0 }, [0, defaultThreshold])
+  if (point) {
+    currentOption.graphic.x = point[0]
+    currentOption.graphic.y = point[1] - 10
+  }
+
+  chart.setOption(currentOption, true)
+}
+
+const cancelTrigger = () => {
+  showTriggerModal.value = false
+  drawHistory() // Redibujar para quitar la línea temporal
+}
+
+const saveTrigger = async () => {
+  if (!telegramChatId.value) return alert('Debes ingresar un Chat ID')
+  
+  try {
+    await api.post('/rules', {
+      deviceId: selectedDeviceId.value,
+      metric: selectedMetric.value,
+      threshold: pendingThreshold.value,
+      condition: triggerCondition.value,
+      chatId: telegramChatId.value
+    })
+    alert('Alerta guardada exitosamente')
+    showTriggerModal.value = false
+  } catch (e) {
+    console.error(e)
+    alert('Error al guardar alerta')
+  }
+}
 
 // Renderizar el gráfico con ECharts
 const renderChart = (data: [number, number][], metricObj: typeof metrics[0]) => {
@@ -174,10 +322,48 @@ const renderChart = (data: [number, number][], metricObj: typeof metrics[0]) => 
     grid: {
       left: '4%',
       right: '4%',
-      bottom: '5%',
-      top: '8%',
+      bottom: '12%',
+      top: '15%',
       containLabel: true
     },
+    toolbox: {
+      feature: {
+        dataZoom: { yAxisIndex: 'none', title: { zoom: 'Zoom', back: 'Restaurar' } },
+        restore: { title: 'Restaurar' },
+        myExportCSV: {
+          show: true,
+          title: 'Descargar CSV',
+          icon: 'path://M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M11,7H13V9H11V7M11,11H13V13H11V11M11,15H13V17H11V15M7,7H9V9H7V7M7,11H9V13H7V11M7,15H9V17H7V15M15,7H17V9H15V7M15,11H17V13H15V11M15,15H17V17H15V15Z',
+          onclick: () => exportData('csv')
+        },
+        myExportPDF: {
+          show: true,
+          title: 'Descargar PDF',
+          icon: 'path://M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M9,13H11V15H9V13M9,11H11V9H9V11M9,17H11V15H9V17Z',
+          onclick: () => exportData('pdf')
+        },
+        myAddTrigger: {
+          show: true,
+          title: 'Crear Alerta Telegram',
+          icon: 'path://M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
+          onclick: () => addTriggerMode()
+        }
+      },
+      iconStyle: { borderColor: '#94a3b8' }
+    },
+    dataZoom: [
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        filterMode: 'filter',
+        textStyle: { color: '#94a3b8' }
+      },
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        filterMode: 'empty'
+      }
+    ],
     xAxis: {
       type: 'time',
       splitLine: { show: false },

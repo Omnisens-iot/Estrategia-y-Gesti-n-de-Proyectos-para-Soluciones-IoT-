@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../config/db';
+import { Parser } from 'json2csv';
+import PDFDocument from 'pdfkit';
 
 interface TelemetryParams {
   deviceId: string;
@@ -129,5 +131,71 @@ export const getRawTelemetry = async (request: FastifyRequest, reply: FastifyRep
   } catch (error) {
     request.log.error(error);
     return reply.status(500).send({ error: 'Error interno obteniendo telemetría cruda' });
+  }
+};
+
+interface ExportQuery {
+  startDate: string;
+  endDate: string;
+  format: 'csv' | 'pdf';
+}
+
+export const exportTelemetry = async (request: FastifyRequest, reply: FastifyReply) => {
+  const clientId = request.user.client_id;
+  const { deviceId } = request.params as TelemetryParams;
+  const { startDate, endDate, format } = request.query as ExportQuery;
+
+  try {
+    const device = await db.selectFrom('devices')
+      .select('device_id')
+      .where('device_id', '=', deviceId)
+      .where('client_id', '=', clientId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!device) return reply.status(404).send({ error: 'Dispositivo no encontrado o acceso denegado' });
+
+    const data = await db.selectFrom('air_quality_data')
+      .selectAll()
+      .where('device_id', '=', deviceId)
+      .where('time', '>=', new Date(startDate))
+      .where('time', '<=', new Date(endDate))
+      .orderBy('time', 'asc')
+      .execute();
+
+    if (format === 'csv') {
+      const json2csvParser = new Parser();
+      const csv = json2csvParser.parse(data);
+      reply.header('Content-Type', 'text/csv');
+      reply.header('Content-Disposition', `attachment; filename="export_${deviceId}.csv"`);
+      return reply.send(csv);
+    } else if (format === 'pdf') {
+      const doc = new PDFDocument();
+      reply.header('Content-Type', 'application/pdf');
+      reply.header('Content-Disposition', `attachment; filename="export_${deviceId}.pdf"`);
+      
+      doc.pipe(reply.raw);
+      doc.fontSize(20).text('Reporte de Telemetría OmniSens', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Dispositivo: ${deviceId}`);
+      doc.text(`Rango: ${startDate} al ${endDate}`);
+      doc.text(`Registros exportados: ${data.length}`);
+      doc.moveDown();
+
+      data.forEach((row, i) => {
+        if (i < 200) { // Limit to 200 lines to avoid massive PDFs
+          doc.fontSize(10).text(`${row.time.toISOString()} | Temp: ${row.temp}°C | Hum: ${row.hum}% | PM2.5: ${row.pm25} | Lux: ${row.lux}`);
+        }
+      });
+      if (data.length > 200) doc.fontSize(10).text('... (exportación PDF limitada a 200 registros. Use CSV para el reporte completo)');
+
+      doc.end();
+      return reply; // Fastify automatically handles the raw stream via pipe when returning reply
+    } else {
+      return reply.status(400).send({ error: 'Formato no soportado. Use csv o pdf' });
+    }
+  } catch (error) {
+    request.log.error(error);
+    reply.status(500).send({ error: 'Error interno en la exportación' });
   }
 };

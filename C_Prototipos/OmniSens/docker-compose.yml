@@ -26,6 +26,9 @@ services:
       EMQX_NODE_NAME: emqx@node1.emqx.io
       EMQX_CLUSTER__DISCOVERY_STRATEGY: manual
       EMQX_ALLOW_ANONYMOUS: "true"
+      EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/key.pem
+      EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/cert.pem
+      EMQX_LISTENERS__SSL__DEFAULT__CACERTFILE: /opt/emqx/etc/certs/cert.pem
     ports:
       - "1883:1883"      # MQTT Broker port
       - "8883:8883"      # MQTTS Secure port
@@ -55,6 +58,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-aqi_db}
       - MQTT_BROKER_URL=mqtt://emqx:1883
       - MQTT_USERNAME=${MQTT_BACKEND_USER:-backend_service}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - MQTT_PASSWORD=${MQTT_BACKEND_PASS:-backend_pass}
       - JWT_SECRET=${JWT_SECRET:-supersecretjwt}
     depends_on:
