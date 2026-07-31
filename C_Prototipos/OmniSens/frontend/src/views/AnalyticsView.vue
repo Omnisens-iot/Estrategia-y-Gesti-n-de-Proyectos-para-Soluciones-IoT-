@@ -181,7 +181,7 @@ const drawHistory = async () => {
 // ----------------------------------------------------
 // Exportación de Datos
 // ----------------------------------------------------
-const exportData = (format: 'csv' | 'pdf') => {
+const exportData = async (format: 'csv' | 'pdf') => {
   if (!chart || !selectedDeviceId.value) return
   
   // Obtener el rango visible actual del dataZoom
@@ -199,9 +199,29 @@ const exportData = (format: 'csv' | 'pdf') => {
     start.setDate(start.getDate() - parseInt(selectedRange.value))
   }
 
-  // Descargar archivo (se abre en nueva pestaña para iniciar descarga)
-  const url = `${api.defaults.baseURL}/telemetry/export/${selectedDeviceId.value}?startDate=${start.toISOString()}&endDate=${end.toISOString()}&format=${format}`
-  window.open(url, '_blank')
+  try {
+    const response = await api.get(`/telemetry/export/${selectedDeviceId.value}`, {
+      params: {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        format
+      },
+      responseType: 'blob'
+    })
+    
+    // Crear objeto URL y forzar descarga
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `export_${selectedDeviceId.value}_${new Date().getTime()}.${format}`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Error al exportar datos:', err)
+    alert('Ocurrió un error al descargar el archivo.')
+  }
 }
 
 // ----------------------------------------------------
@@ -210,38 +230,47 @@ const exportData = (format: 'csv' | 'pdf') => {
 const addTriggerMode = () => {
   if (!chart) return
   
-  // Añadir un markLine temporal y draggable al gráfico
   const metricObj = metrics.find(m => m.value === selectedMetric.value)!
   const currentOption = chart.getOption() as any
   const series = currentOption.series[0]
   
-  const currentYMax = currentOption.yAxis[0].max || 50 // Estimado
   const defaultThreshold = 30 // Valor inicial
 
   series.markLine = {
-    animation: true,
-    data: [
-      {
-        yAxis: defaultThreshold,
-        name: 'Arrastra para fijar alerta'
-      }
-    ],
+    animation: false,
+    data: [{ yAxis: defaultThreshold }],
     label: { formatter: 'Nueva Alerta', position: 'end' },
     lineStyle: { color: '#ef4444', type: 'solid', width: 2 }
   }
 
+  // Encontrar el último punto X para situar el botón en pantalla
+  const lastDataPoint = series.data && series.data.length > 0 ? series.data[series.data.length - 1] : null
+  const xValue = lastDataPoint ? lastDataPoint[0] : new Date().getTime()
+  const point = chart.convertToPixel({ seriesIndex: 0 }, [xValue, defaultThreshold])
+
+  if (!point) return
+
   // Habilitar Graphic component para hacerlo arrastrable
   currentOption.graphic = {
     type: 'group',
+    id: 'trigger-handle',
+    $action: 'replace',
     draggable: true,
+    x: point[0] - 50,
+    y: point[1] - 15,
+    ondrag: function (this: any) {
+      // Evitamos arrastrar en el eje X, forzamos mantenerlo centrado al final
+      this.x = point[0] - 50
+    },
     ondragend: function (this: any) {
       // Capturar la posición Y del drop y convertirla al valor del eje
-      const pos = chart!.convertFromPixel({ seriesIndex: 0 }, [this.x, this.y])
+      const pos = chart!.convertFromPixel({ seriesIndex: 0 }, [this.x + 50, this.y + 15])
       const newThreshold = +pos[1].toFixed(1)
       
       // Actualizar markLine
-      series.markLine.data[0].yAxis = newThreshold
-      chart!.setOption({ series: [series] })
+      const opt = chart!.getOption() as any
+      opt.series[0].markLine.data[0].yAxis = newThreshold
+      chart!.setOption({ series: opt.series })
       
       // Abrir Modal
       pendingThreshold.value = newThreshold
@@ -252,21 +281,15 @@ const addTriggerMode = () => {
       {
         type: 'rect',
         z: 100,
-        shape: { width: 100, height: 20 },
-        style: { fill: '#ef4444', text: 'Arrastrame', textFill: '#fff' },
+        shape: { width: 100, height: 30, r: 6 },
+        style: { fill: '#ef4444', text: 'Arrástrame', textFill: '#fff', shadowBlur: 4, shadowColor: 'rgba(0,0,0,0.5)' },
         invisible: false
       }
     ]
   }
 
-  // Posicionar el graphic sobre la línea
-  const point = chart.convertToPixel({ seriesIndex: 0 }, [0, defaultThreshold])
-  if (point) {
-    currentOption.graphic.x = point[0]
-    currentOption.graphic.y = point[1] - 10
-  }
-
-  chart.setOption(currentOption, true)
+  // Set option pero con notMerge=false para no destruir el estado actual del dataZoom
+  chart.setOption({ series: [series], graphic: currentOption.graphic }, false)
 }
 
 const cancelTrigger = () => {

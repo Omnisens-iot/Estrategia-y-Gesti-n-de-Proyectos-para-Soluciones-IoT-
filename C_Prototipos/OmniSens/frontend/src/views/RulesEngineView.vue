@@ -12,6 +12,23 @@
       <span>{{ statusMessage }}</span>
     </div>
 
+    <!-- Web Push Setup -->
+    <div class="bg-dark border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center gap-3">
+        <Bell class="w-5 h-5 text-primary" />
+        <h3 class="text-lg font-bold text-white">Alertas Push en Dispositivo</h3>
+      </div>
+      <p class="text-sm text-slate-400">Recibe notificaciones en este dispositivo (móvil o PC) cuando las reglas de alerta superen los umbrales configurados, incluso si la aplicación está cerrada.</p>
+      
+      <div class="flex gap-4 items-center">
+        <button @click="subscribeToPush" :disabled="pushStatus === 'granted'" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 text-white font-bold text-sm rounded-lg transition-colors shadow-lg flex items-center gap-2">
+          <span v-if="pushStatus === 'granted'">✓ Suscrito a Notificaciones</span>
+          <span v-else-if="pushStatus === 'denied'">✗ Permiso Denegado</span>
+          <span v-else>Activar Notificaciones Push</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Selector de Dispositivo para la Regla -->
     <div class="bg-dark border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
@@ -121,7 +138,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Settings, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-vue-next'
+import { Settings, Plus, Trash2, ArrowUp, ArrowDown, Bell } from 'lucide-vue-next'
 import api from '../services/api'
 
 interface Device {
@@ -141,8 +158,53 @@ const selectedDeviceId = ref('')
 const sending = ref(false)
 const statusMessage = ref('')
 const statusType = ref('success')
+const pushStatus = ref(Notification.permission)
 
 const rules = ref<Rule[]>([])
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
+const subscribeToPush = async () => {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('Tu navegador no soporta notificaciones Push.');
+    return;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    pushStatus.value = permission;
+
+    if (permission !== 'granted') {
+      alert('Permiso para notificaciones denegado.');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const publicVapidKey = 'BAEvyGWz5BfqXLfo6X1dqJrRKuJPmzpn0wUrtXsIeE1LJV1qa7e5c_-TcsUG8dqXs4V14ApfdBKgVwslp1xmuPI';
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+    });
+
+    await api.post('/push/subscribe', subscription);
+    
+    statusType.value = 'success';
+    statusMessage.value = '✓ ¡Notificaciones activadas con éxito!';
+  } catch (err) {
+    console.error('Error al suscribir a push:', err);
+    alert('Ocurrió un error al activar las notificaciones.');
+  }
+};
 
 const getUnit = (metric: string) => {
   if (metric === 'temp') return '°C'

@@ -2,7 +2,45 @@ import * as mqtt from 'mqtt';
 import * as crypto from 'crypto';
 import { db } from '../config/db';
 import { sendTelegramAlert } from './telegramBot';
+import { sendWebPushToClient } from './webpush';
 let mqttClient: mqtt.MqttClient | null = null;
+
+async function sendSystemAlert(deviceId: string, alertType: string, msg: string) {
+  try {
+    // 1. Obtener Chat ID de administrador. Usamos el primer Chat ID registrado en device_rules si no hay variable de entorno.
+    const rule = await db.selectFrom('device_rules').select('chat_id').where('chat_id', 'is not', null).executeTakeFirst();
+    const chatId = process.env.ADMIN_CHAT_ID || (rule ? rule.chat_id : null);
+    
+    if (!chatId) return;
+
+    // 2. Controlar Rate-Limiting (12 horas)
+    const log = await db.selectFrom('system_alerts_log')
+      .selectAll()
+      .where('device_id', '=', deviceId)
+      .where('alert_type', '=', alertType)
+      .executeTakeFirst();
+
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    
+    if (!log || log.last_sent_at < twelveHoursAgo) {
+      sendTelegramAlert(chatId, msg);
+      
+      if (log) {
+        await db.updateTable('system_alerts_log')
+          .set({ last_sent_at: new Date() })
+          .where('device_id', '=', deviceId)
+          .where('alert_type', '=', alertType)
+          .execute();
+      } else {
+        await db.insertInto('system_alerts_log')
+          .values({ device_id: deviceId, alert_type: alertType, last_sent_at: new Date() })
+          .execute();
+      }
+    }
+  } catch (e) {
+    console.error('Error enviando alerta de sistema:', e);
+  }
+}
 
 export function setupMqttSubscriber() {
   const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883'; 
@@ -27,10 +65,32 @@ export function setupMqttSubscriber() {
       if (err) console.error('❌ Error al suscribirse al tópico de aprovisionamiento', err);
       else console.log('📡 Suscrito a aqi/provisioning/request');
     });
+
+    // Suscribirse a eventos de conexión/desconexión del broker EMQX
+    mqttClient?.subscribe('$SYS/brokers/+/clients/+/disconnected', (err) => {
+      if (err) console.error('❌ Error al suscribirse a eventos de desconexión', err);
+      else console.log('📡 Suscrito a eventos de desconexión de clientes ($SYS)');
+    });
   });
 
   mqttClient.on('message', async (topic, message) => {
     try {
+      // ----------------------------------------------------------------------
+      // Flujo de Eventos de Sistema (Desconexiones)
+      // ----------------------------------------------------------------------
+      if (topic.startsWith('$SYS/') && topic.endsWith('/disconnected')) {
+        const parts = topic.split('/');
+        const clientId = parts[4]; // $SYS/brokers/{node}/clients/{clientid}/disconnected
+        if (clientId) {
+          const device = await db.selectFrom('devices').select('device_id').where('device_id', '=', clientId).executeTakeFirst();
+          if (device) {
+            await db.updateTable('devices').set({ status: 'offline' }).where('device_id', '=', device.device_id).execute();
+            await sendSystemAlert(device.device_id, 'disconnected', `🚨 *Alerta de Sistema*\nEl dispositivo \`${device.device_id}\` se ha desconectado de la red.`);
+          }
+        }
+        return;
+      }
+
       // ----------------------------------------------------------------------
       // Flujo de Aprovisionamiento Seguro por MQTT
       // ----------------------------------------------------------------------
@@ -87,7 +147,7 @@ export function setupMqttSubscriber() {
 
         // Traducir el identifier (puede ser la MAC address) al device_id real
         const device = await db.selectFrom('devices')
-          .select('device_id')
+          .select(['device_id', 'client_id'])
           .where('mac_address', '=', identifier.toUpperCase().replace(/:/g, ''))
           .executeTakeFirst();
           
@@ -124,6 +184,15 @@ export function setupMqttSubscriber() {
           
           console.log(`💾 Telemetría guardada para dispositivo: ${actualDeviceId} (desde tópico MAC: ${identifier})`);
 
+          // Verificar eventos de hardware críticos para notificaciones de sistema
+          const battery = payload.battery !== undefined ? payload.battery : (payload.bat !== undefined ? payload.bat : null);
+          if (battery !== null && battery < 20) {
+            await sendSystemAlert(actualDeviceId, 'battery', `🔋 *Alerta de Sistema*\nEl dispositivo \`${actualDeviceId}\` reporta batería baja (${battery}%).`);
+          }
+          if (payload.pm10 === -1.0 || payload.temp === -1.0) {
+            await sendSystemAlert(actualDeviceId, 'sensor_error', `🛠️ *Alerta de Sistema*\nEl dispositivo \`${actualDeviceId}\` reporta falla de hardware o sensor.`);
+          }
+
           // ----------------------------------------------------------------------
           // Evaluación de Reglas (Triggers) para Alertas de Telegram
           // ----------------------------------------------------------------------
@@ -134,7 +203,7 @@ export function setupMqttSubscriber() {
               .execute();
 
             for (const rule of rules) {
-              if (!rule.chat_id || !rule.condition) continue;
+              if (!rule.condition) continue;
               
               const value = payload[rule.metric];
               if (value === undefined || value === null) continue;
@@ -147,8 +216,15 @@ export function setupMqttSubscriber() {
               else if (rule.condition === '<=' && value <= rule.threshold) isTriggered = true;
               
               if (isTriggered) {
-                const msg = `⚠️ *Alerta OmniSens*\nEl dispositivo \`${actualDeviceId}\` superó el umbral configurado.\n\n*Métrica:* ${rule.metric}\n*Valor actual:* ${value}\n*Condición:* ${rule.condition} ${rule.threshold}`;
-                sendTelegramAlert(rule.chat_id, msg);
+                // Notificación Web Push para el Cliente
+                if (device && device.client_id) {
+                  const pushPayload = {
+                    title: '⚠️ Alerta OmniSens',
+                    body: `El dispositivo ${actualDeviceId} superó el umbral de ${rule.metric} (Valor: ${value}).`,
+                    icon: '/pwa-192x192.png'
+                  };
+                  sendWebPushToClient(device.client_id, pushPayload);
+                }
               }
             }
           } catch (e) {

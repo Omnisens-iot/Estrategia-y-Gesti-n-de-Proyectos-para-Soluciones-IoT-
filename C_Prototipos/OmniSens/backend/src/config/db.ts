@@ -93,6 +93,19 @@ export interface Database {
     r2: number | null;
     pwm: number | null;
   };
+  system_alerts_log: {
+    device_id: string;
+    alert_type: string;
+    last_sent_at: Date;
+  };
+  push_subscriptions: {
+    id: Generated<number>;
+    client_id: number | null;
+    endpoint: string;
+    auth: string;
+    p256dh: string;
+    created_at: Generated<Date>;
+  };
 }
 
 // Configuración del dialecto de PostgreSQL usando el pool nativo de 'pg'
