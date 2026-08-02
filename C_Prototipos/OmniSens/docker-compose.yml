@@ -26,12 +26,19 @@ services:
       EMQX_NODE_NAME: emqx@node1.emqx.io
       EMQX_CLUSTER__DISCOVERY_STRATEGY: manual
       EMQX_ALLOW_ANONYMOUS: "true"
-      EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/key.pem
-      EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/cert.pem
-      EMQX_LISTENERS__SSL__DEFAULT__CACERTFILE: /opt/emqx/etc/certs/cert.pem
+      # Listener 1: MQTTS (Hardware) - Ed25519
+      EMQX_LISTENERS__SSL__DEFAULT__BIND: 8883
+      EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/ed25519/server.key
+      EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/ed25519/server.crt
+      
+      # Listener 2: WSS (Web) - Let's Encrypt
+      EMQX_LISTENERS__WSS__DEFAULT__BIND: 8084
+      EMQX_LISTENERS__WSS__DEFAULT__KEYFILE: /opt/emqx/etc/certs/key.pem
+      EMQX_LISTENERS__WSS__DEFAULT__CERTFILE: /opt/emqx/etc/certs/cert.pem
     ports:
       - "1883:1883"      # MQTT Broker port
-      - "8883:8883"      # MQTTS Secure port
+      - "8883:8883"      # MQTTS Secure port (Hardware)
+      - "8084:8084"      # WSS Secure port (Web)
     volumes:
       - emqx_data:/opt/emqx/data
       - ./configuraciones/emqx_acl.conf:/opt/emqx/etc/acl.conf:ro

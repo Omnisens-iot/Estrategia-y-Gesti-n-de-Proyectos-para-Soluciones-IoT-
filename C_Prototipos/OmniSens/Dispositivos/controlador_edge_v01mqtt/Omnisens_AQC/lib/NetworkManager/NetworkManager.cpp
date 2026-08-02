@@ -5,25 +5,17 @@
 // Placeholder para CA Cert
 const char* rootCACertificate = \
 "-----BEGIN CERTIFICATE-----\n" \
-"MIIDbzCCAlegAwIBAgIUT39mJ/NjufseQyTmiASomEgtLG8wDQYJKoZIhvcNAQEL\n" \
-"BQAwRzELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExETAPBgNVBAoMCE9t\n" \
-"bmlTZW5zMRMwEQYDVQQDDApPbW5pU2Vuc0NBMB4XDTI2MDYxNjA2MDUwM1oXDTM2\n" \
-"MDYxMzA2MDUwM1owRzELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExETAP\n" \
-"BgNVBAoMCE9tbmlTZW5zMRMwEQYDVQQDDApPbW5pU2Vuc0NBMIIBIjANBgkqhkiG\n" \
-"9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2i8t/geVCUZ0+SFl8cpaoBR7dXx1ujJVshDu\n" \
-"Mel4HFDqCIxzqGvFJEbdeerbnfMvln0O3knIb8e1YjsEdG8IlBYugCCKAAb328ve\n" \
-"bKBsNOMN907/fBoEKXuHyNdsNjTWr05wEqqDj4JMlfB+3KxiA3kZVIpcGv1IReQp\n" \
-"N5FVsH1R6UmBWClnU7vVzL+jFGUngiEbu7HZbpl9VqFbroDfybuphhPM05S6rGuE\n" \
-"Iom7MZBCVkgUKsQjZGmarfIU5hxMZDHMVhA7jKNnkDvrcQGRhkspX3Ib0J28vQZg\n" \
-"bMEhM0KPc/eJ1J38Dya7+h8mC6Es/K6tXFe2+F3YFB2FX5yFMwIDAQABo1MwUTAd\n" \
-"BgNVHQ4EFgQUoeIIBK3s4G/3K1rEamD+RvH1GjEwHwYDVR0jBBgwFoAUoeIIBK3s\n" \
-"4G/3K1rEamD+RvH1GjEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC\n" \
-"AQEAKDgGeaQnPeO6X8BIwEb5t+CBt5NttJdgBJzK7SKS8+/ZKFTmtLn+WdgBp94g\n" \
-"mBD8i+fOYZhl73DW3kCVttHYV0EyLvokeXQmiq0fVMeQ0ktYgl+DyuWtNc62Kwsm\n" \
-"xCtIrpl2epZ09rb7JncagimtTANBHLF6gIDpr7eWZmhNqZtCtIUn6NLFpdblxMiG\n" \
-"AVzvcdknbWMP4DGiKua/wiAUBDj42xWI4qkgue9ErpIwwkPXg75GBexc1PgfFCJc\n" \
-"y7wUyHlXmCz8EiBlfRWqKdWxN6/qfe/XYgUKzr1zu+azJnPv+LSG9mFycvKCq+PN\n" \
-"9IdyVsJbVJhFQ1/eJ1IWLjyUYQ==\n" \
+"MIIB5zCCAZmgAwIBAgIUBj28mkMO2t9Z6GclCjoJQS9xP3wwBQYDK2VwMGkxCzAJ\n" \
+"BgNVBAYTAkFSMRAwDgYDVQQIDAdDb3Jkb2JhMRAwDgYDVQQHDAdDb3Jkb2JhMQ0w\n" \
+"CwYDVQQKDARJU1BDMQwwCgYDVQQLDANJb1QxGTAXBgNVBAMMEE9tbmlTZW5zIFJv\n" \
+"b3QgQ0EwHhcNMjYwODAyMDIwNTEzWhcNMzYwNzMwMDIwNTEzWjBpMQswCQYDVQQG\n" \
+"EwJBUjEQMA4GA1UECAwHQ29yZG9iYTEQMA4GA1UEBwwHQ29yZG9iYTENMAsGA1UE\n" \
+"CgwESVNQQzEMMAoGA1UECwwDSW9UMRkwFwYDVQQDDBBPbW5pU2VucyBSb290IENB\n" \
+"MCowBQYDK2VwAyEAif0aurEJWDtNlXPM+WsGQ2oCuYvFV8rHIOLe2+J19vqjUzBR\n" \
+"MB0GA1UdDgQWBBRk86gJMMYmmwHy1nln3KBuC7UsoTAfBgNVHSMEGDAWgBRk86gJ\n" \
+"MMYmmwHy1nln3KBuC7UsoTAPBgNVHRMBAf8EBTADAQH/MAUGAytlcANBAP8D9i41\n" \
+"8e7BjnQLLtCFZozU/RdMLTkBGjQaDniEjCKCI6xrn8of5FuA27Aryvp6H1NByHAL\n" \
+"34afdZYQyu4o1Ag=\n" \
 "-----END CERTIFICATE-----\n";
 
 NetworkManager* globalNetworkManager = nullptr;
@@ -40,8 +32,8 @@ void NetworkManager::begin() {
     // direcciones IP directas en el campo SAN del certificado.
     // Para producción, se recomienda usar un dominio real (ej. mqtt.omnisens.com).
     // Por ahora, como conectamos por IP, usamos setInsecure() para MQTTS.
-    // _wifiClient.setCACert(rootCACertificate); 
-    _wifiClient.setInsecure();
+    _wifiClient.setCACert(rootCACertificate); 
+    // _wifiClient.setInsecure(); // Desactivado por Seguridad por Diseño
 
     _mqttClient.setClient(_wifiClient);
     _mqttClient.setServer(_broker, _port);
