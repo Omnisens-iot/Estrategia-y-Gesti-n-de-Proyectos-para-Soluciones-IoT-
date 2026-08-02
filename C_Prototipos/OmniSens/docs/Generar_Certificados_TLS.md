@@ -47,14 +47,30 @@ Después de ejecutar los comandos, tendrás los siguientes archivos críticos:
 - `server.crt`: Certificado público del broker MQTT. Va en el servidor (Netbook).
 - `ca.srl` y `server.csr`: Archivos temporales o de seguimiento generados en el proceso.
 
-## 4. Configuración en EMQX
+## 4. Configuración en EMQX (Arquitectura de Doble Oyente)
 
-En tu archivo `docker-compose.yml` de EMQX o en su configuración interna (`emqx.conf`), deberás montar los archivos y referenciarlos para activar TLS:
+Para satisfacer los requisitos de seguridad industrial en el Edge y mantener la compatibilidad con los navegadores web en el Dashboard, implementamos una arquitectura "Dual-Listener":
+
+- **MQTTS (Puerto 8883) - Exclusivo para Hardware IoT:** Utiliza los certificados Ed25519 (Root CA propio) para máxima velocidad y seguridad en los ESP32.
+- **WSS (Puerto 8084) - Exclusivo para Usuarios (Web):** Utiliza los certificados públicos de Let's Encrypt para que los navegadores confíen nativamente en la conexión WebSocket.
+
+En tu archivo `docker-compose.yml` de EMQX, deberás montar ambas rutas y configurar los listeners mediante variables de entorno:
 
 ```yaml
-# Fragmento ilustrativo para docker-compose.yml
 volumes:
-  - ./certs/server.crt:/opt/emqx/etc/certs/server.crt:ro
-  - ./certs/server.key:/opt/emqx/etc/certs/server.key:ro
-  - ./certs/ca.pem:/opt/emqx/etc/certs/ca.pem:ro
+  # Certificados Ed25519 (CA Propia)
+  - /home/ubuntu/emqx_certs/ed25519:/opt/emqx/etc/certs/ed25519:ro
+  # Certificados Let's Encrypt (CA Pública)
+  - /home/ubuntu/emqx_certs:/opt/emqx/etc/certs/letsencrypt:ro
+
+environment:
+  # Listener 1: MQTTS (Hardware) - Ed25519
+  EMQX_LISTENERS__SSL__DEFAULT__BIND: 8883
+  EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/ed25519/server.key
+  EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/ed25519/server.crt
+  
+  # Listener 2: WSS (Web) - Let's Encrypt
+  EMQX_LISTENERS__WSS__DEFAULT__BIND: 8084
+  EMQX_LISTENERS__WSS__DEFAULT__KEYFILE: /opt/emqx/etc/certs/letsencrypt/key.pem
+  EMQX_LISTENERS__WSS__DEFAULT__CERTFILE: /opt/emqx/etc/certs/letsencrypt/cert.pem
 ```
