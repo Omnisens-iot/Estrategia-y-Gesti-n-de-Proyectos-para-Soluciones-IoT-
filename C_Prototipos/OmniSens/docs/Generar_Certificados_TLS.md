@@ -64,15 +64,15 @@ volumes:
   - /home/ubuntu/emqx_certs:/opt/emqx/etc/certs/letsencrypt:ro
 
 environment:
-  # Listener 1: MQTTS (Hardware) - Ed25519
+  # Listener 1: MQTTS (Hardware) - Ed25519 (or ECDSA)
   EMQX_LISTENERS__SSL__DEFAULT__BIND: 8883
-  EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/ed25519/server.key
-  EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/ed25519/server.crt
+  EMQX_LISTENERS__SSL__DEFAULT__SSL_OPTIONS__KEYFILE: /opt/emqx/etc/certs/ed25519/server.key
+  EMQX_LISTENERS__SSL__DEFAULT__SSL_OPTIONS__CERTFILE: /opt/emqx/etc/certs/ed25519/server.crt
   
   # Listener 2: WSS (Web) - Let's Encrypt
   EMQX_LISTENERS__WSS__DEFAULT__BIND: 8084
-  EMQX_LISTENERS__WSS__DEFAULT__KEYFILE: /opt/emqx/etc/certs/letsencrypt/key.pem
-  EMQX_LISTENERS__WSS__DEFAULT__CERTFILE: /opt/emqx/etc/certs/letsencrypt/cert.pem
+  EMQX_LISTENERS__WSS__DEFAULT__SSL_OPTIONS__KEYFILE: /opt/emqx/etc/certs/letsencrypt/key.pem
+  EMQX_LISTENERS__WSS__DEFAULT__SSL_OPTIONS__CERTFILE: /opt/emqx/etc/certs/letsencrypt/cert.pem
 ```
 
 ## 5. Despliegue a Gran Escala (Fábrica vs Nube)
