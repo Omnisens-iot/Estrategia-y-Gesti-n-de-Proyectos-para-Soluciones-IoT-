@@ -5,7 +5,13 @@ import { sendTelegramAlert } from './telegramBot';
 import { sendWebPushToClient } from './webpush';
 let mqttClient: mqtt.MqttClient | null = null;
 
-async function sendSystemAlert(deviceId: string, alertType: string, msg: string) {
+interface RuleState {
+  isTriggered: boolean;
+  lastTriggeredValue: number;
+}
+const ruleStates = new Map<string, RuleState>();
+
+async function sendSystemAlert(deviceId: string, alertType: string, msg: string, force: boolean = false) {
   try {
     // 1. Obtener Chat ID de administrador. Usamos el primer Chat ID registrado en device_rules si no hay variable de entorno.
     const rule = await db.selectFrom('device_rules').select('chat_id').where('chat_id', 'is not', null).executeTakeFirst();
@@ -22,7 +28,7 @@ async function sendSystemAlert(deviceId: string, alertType: string, msg: string)
 
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     
-    if (!log || log.last_sent_at < twelveHoursAgo) {
+    if (force || !log || log.last_sent_at < twelveHoursAgo) {
       sendTelegramAlert(chatId, msg);
       
       if (log) {
@@ -208,26 +214,68 @@ export function setupMqttSubscriber() {
               const value = payload[rule.metric];
               if (value === undefined || value === null) continue;
               
-              let isTriggered = false;
-              if (ruleCondition === '>' && value > rule.threshold) isTriggered = true;
-              else if (ruleCondition === '<' && value < rule.threshold) isTriggered = true;
-              else if (ruleCondition === '==' && value == rule.threshold) isTriggered = true;
-              else if (ruleCondition === '>=' && value >= rule.threshold) isTriggered = true;
-              else if (ruleCondition === '<=' && value <= rule.threshold) isTriggered = true;
+              let conditionMet = false;
+              if (ruleCondition === '>' && value > rule.threshold) conditionMet = true;
+              else if (ruleCondition === '<' && value < rule.threshold) conditionMet = true;
+              else if (ruleCondition === '==' && value == rule.threshold) conditionMet = true;
+              else if (ruleCondition === '>=' && value >= rule.threshold) conditionMet = true;
+              else if (ruleCondition === '<=' && value <= rule.threshold) conditionMet = true;
               
-              if (isTriggered) {
-                // Notificación Web Push para el Cliente
-                if (device && device.client_id) {
-                  const pushPayload = {
-                    title: '⚠️ Alerta OmniSens',
-                    body: `El dispositivo ${actualDeviceId} superó el umbral de ${rule.metric} (Valor: ${value}).`,
-                    icon: '/pwa-192x192.png'
-                  };
-                  sendWebPushToClient(device.client_id, pushPayload);
+              console.log(`🔔 Evaluando regla [${rule.metric} ${ruleCondition} ${rule.threshold}]: Valor actual = ${value} -> Cumple condición: ${conditionMet}`);
+              
+              const stateKey = `${actualDeviceId}_${rule.metric}`;
+              const currentState = ruleStates.get(stateKey) || { isTriggered: false, lastTriggeredValue: 0 };
+              
+              if (conditionMet) {
+                let shouldNotify = false;
+                
+                if (!currentState.isTriggered) {
+                  // Cambio de estado: Normal -> Alarma
+                  shouldNotify = true;
+                } else {
+                  // Ya estaba en alarma, verificar el Delta (10% de cambio)
+                  const delta = Math.abs(value - currentState.lastTriggeredValue);
+                  // 10% del último valor, o al menos un cambio mínimo si el valor es muy pequeño
+                  const requiredDelta = Math.max(Math.abs(currentState.lastTriggeredValue * 0.10), 1.0); 
+                  if (delta >= requiredDelta) {
+                    shouldNotify = true;
+                  }
                 }
                 
-                // Notificación Telegram
-                await sendSystemAlert(actualDeviceId, `rule_${rule.metric}`, `⚠️ *Alerta OmniSens*\nEl dispositivo \`${actualDeviceId}\` superó el umbral de ${rule.metric} (Valor: ${value}).`);
+                if (shouldNotify) {
+                  // Actualizar estado
+                  ruleStates.set(stateKey, { isTriggered: true, lastTriggeredValue: value });
+                  
+                  // Notificación Web Push para el Cliente
+                  if (device && device.client_id) {
+                    const pushPayload = {
+                      title: '⚠️ Alerta OmniSens',
+                      body: `El dispositivo ${actualDeviceId} superó el umbral de ${rule.metric} (Valor: ${value}).`,
+                      icon: '/pwa-192x192.png'
+                    };
+                    sendWebPushToClient(device.client_id, pushPayload);
+                  }
+                  
+                  // Notificación Telegram (usando force=true para evadir el rate limit de 12hs, ya que la logica de estado y delta se encarga del antispam)
+                  await sendSystemAlert(actualDeviceId, `rule_${rule.metric}`, `⚠️ *Alerta OmniSens*\nEl dispositivo \`${actualDeviceId}\` superó el umbral de ${rule.metric} (Valor: ${value}).`, true);
+                }
+              } else {
+                // La condición ya no se cumple
+                if (currentState.isTriggered) {
+                  // Cambio de estado: Alarma -> Normal (Recuperación)
+                  ruleStates.set(stateKey, { isTriggered: false, lastTriggeredValue: value });
+                  
+                  // Enviar Notificación de Recuperación
+                  if (device && device.client_id) {
+                    const pushPayload = {
+                      title: '✅ Alerta Resuelta',
+                      body: `El parámetro ${rule.metric} en ${actualDeviceId} volvió a la normalidad (Valor: ${value}).`,
+                      icon: '/pwa-192x192.png'
+                    };
+                    sendWebPushToClient(device.client_id, pushPayload);
+                  }
+                  await sendSystemAlert(actualDeviceId, `rule_${rule.metric}_recovered`, `✅ *Alerta Resuelta*\nEl parámetro ${rule.metric} en \`${actualDeviceId}\` volvió a la normalidad (Valor: ${value}).`, true);
+                }
               }
             }
           } catch (e) {

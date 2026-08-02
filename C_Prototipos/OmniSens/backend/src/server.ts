@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import dotenv from 'dotenv';
 import jwtPlugin from './plugins/jwt';
 import { setupMqttSubscriber } from './services/mqtt';
+import { startHealthReportScheduler } from './services/healthReport';
 
 dotenv.config();
 
@@ -36,6 +37,9 @@ const start = async () => {
   try {
     // Iniciar el servicio MQTT que correrá en segundo plano ingiriendo datos
     setupMqttSubscriber();
+    
+    // Iniciar el planificador de reportes horarios de salud por Telegram
+    startHealthReportScheduler();
     
     // Levantar la API REST
     const port = Number(process.env.PORT) || 3000;

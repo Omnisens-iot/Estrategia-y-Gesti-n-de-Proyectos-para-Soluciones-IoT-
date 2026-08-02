@@ -2,22 +2,22 @@
 #include <SystemLogger.h>
 #include <time.h>
 
-// Placeholder para CA Cert
-const char* rootCACertificate = \
-"-----BEGIN CERTIFICATE-----\n" \
-"MIICJzCCAc2gAwIBAgIUMgP735U3gsbqH7VM/rpcahoCLMMwCgYIKoZIzj0EAwIw\n" \
-"aTELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExEDAOBgNVBAcMB0NvcmRv\n" \
-"YmExDTALBgNVBAoMBElTUEMxDDAKBgNVBAsMA0lvVDEZMBcGA1UEAwwQT21uaVNl\n" \
-"bnMgUm9vdCBDQTAeFw0yNjA4MDIwMjIwMTBaFw0zNjA3MzAwMjIwMTBaMGkxCzAJ\n" \
-"BgNVBAYTAkFSMRAwDgYDVQQIDAdDb3Jkb2JhMRAwDgYDVQQHDAdDb3Jkb2JhMQ0w\n" \
-"CwYDVQQKDARJU1BDMQwwCgYDVQQLDANJb1QxGTAXBgNVBAMMEE9tbmlTZW5zIFJv\n" \
-"b3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARCk1Z58bB4jOeBGF7e8RkI\n" \
-"YWhAOqzNjmH8NATyy3geFU0tXypzrrfaLe5k+1hRRSUuBfOW7YRT689eMAqfwqjj\n" \
-"o1MwUTAdBgNVHQ4EFgQUnwRrStMSV5IiXYlTNWhnoflhHCEwHwYDVR0jBBgwFoAU\n" \
-"nwRrStMSV5IiXYlTNWhnoflhHCEwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQD\n" \
-"AgNIADBFAiA8Y/gQ2ewr0n1QTGvFyjfcNENgB9Zxo0m3KdcxrNCaYgIhALpG2z0R\n" \
-"Bn3mjyKcXnpNwGso86XHGwSiqE8kPFWGO0jx\n" \
-"-----END CERTIFICATE-----\n";
+// Certificado CA Raíz de OmniSens para MQTTS (Puerto 8883)
+const char* rootCACertificate = R"(-----BEGIN CERTIFICATE-----
+MIICJzCCAc2gAwIBAgIUMgP735U3gsbqH7VM/rpcahoCLMMwCgYIKoZIzj0EAwIw
+aTELMAkGA1UEBhMCQVIxEDAOBgNVBAgMB0NvcmRvYmExEDAOBgNVBAcMB0NvcmRv
+YmExDTALBgNVBAoMBElTUEMxDDAKBgNVBAsMA0lvVDEZMBcGA1UEAwwQT21uaVNl
+bnMgUm9vdCBDQTAeFw0yNjA4MDIwMjIwMTBaFw0zNjA3MzAwMjIwMTBaMGkxCzAJ
+BgNVBAYTAkFSMRAwDgYDVQQIDAdDb3Jkb2JhMRAwDgYDVQQHDAdDb3Jkb2JhMQ0w
+CwYDVQQKDARJU1BDMQwwCgYDVQQLDANJb1QxGTAXBgNVBAMMEE9tbmlTZW5zIFJv
+b3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARCk1Z58bB4jOeBGF7e8RkI
+YWhAOqzNjmH8NATyy3geFU0tXypzrrfaLe5k+1hRRSUuBfOW7YRT689eMAqfwqjj
+o1MwUTAdBgNVHQ4EFgQUnwRrStMSV5IiXYlTNWhnoflhHCEwHwYDVR0jBBgwFoAU
+nwRrStMSV5IiXYlTNWhnoflhHCEwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQD
+AgNIADBFAiA8Y/gQ2ewr0n1QTGvFyjfcNENgB9Zxo0m3KdcxrNCaYgIhALpG2z0R
+Bn3mjyKcXnpNwGso86XHGwSiqE8kPFWGO0jx
+-----END CERTIFICATE-----
+)";
 
 NetworkManager* globalNetworkManager = nullptr;
 
@@ -29,12 +29,8 @@ NetworkManager::NetworkManager(const char* broker, uint16_t port, LedIndicator* 
 void NetworkManager::begin() {
     SystemLogger::begin(); // Inicializar estado de logs
     
-    // IMPORTANTE: mbedTLS en ESP32 tiene un bug/limitacion conocida al validar 
-    // direcciones IP directas en el campo SAN del certificado.
-    // Para producción, se recomienda usar un dominio real (ej. mqtt.omnisens.com).
-    // Por ahora, como conectamos por IP, usamos setInsecure() para MQTTS.
-    _wifiClient.setCACert(rootCACertificate); 
-    // _wifiClient.setInsecure(); // Desactivado por Seguridad por Diseño
+    // Seguridad por Diseño: Validación estricta del certificado CA del Servidor OmniSens
+    _wifiClient.setCACert(rootCACertificate);
 
     _mqttClient.setClient(_wifiClient);
     _mqttClient.setServer(_broker, _port);
@@ -140,6 +136,11 @@ void NetworkManager::connectWiFi() {
     SystemLogger::info("Conectando a WiFi...");
     _led->setMode(LED_CONNECTING);
     
+    // Configurar DNS públicos (Google 8.8.8.8 y Cloudflare 1.1.1.1) ANTES de conectar
+    // Usamos INADDR_NONE para conservar la IP y Puerta de Enlace por DHCP, pero forzar DNS confiables
+    // Esto resuelve el problema de DNS Failed en routers de proveedores locales (Fibertel, etc)
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, IPAddress(8, 8, 8, 8), IPAddress(1, 1, 1, 1));
+    
     // Configurar timeouts del portal cautivo de emergencia
     _wm.setConnectTimeout(20); // 20 segundos para intentar conectar al AP guardado
     _wm.setConfigPortalTimeout(120); // 2 minutos máximo si levanta el portal de emergencia
@@ -155,11 +156,11 @@ void NetworkManager::connectWiFi() {
 
 void NetworkManager::syncTime() {
     SystemLogger::info("Sincronizando reloj por NTP (Requerido para TLS)...");
-    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov", "1.pool.ntp.org");
     
     time_t now = time(nullptr);
     int retries = 0;
-    while (now < 24 * 3600 && retries < 15) { // Esperar hasta que el año sea > 1970
+    while (now < 24 * 3600 && retries < 60) { // Esperar hasta 30 segundos
         delay(500);
         now = time(nullptr);
         retries++;
@@ -176,12 +177,24 @@ void NetworkManager::syncTime() {
 }
 
 void NetworkManager::connectMQTT() {
+    time_t now = time(nullptr);
+    if (now < 24 * 3600) {
+        SystemLogger::error("Reloj no sincronizado. Reintentando NTP...");
+        syncTime();
+        if (time(nullptr) < 24 * 3600) {
+            SystemLogger::error("Abortando intento MQTT. Se requiere reloj valido para TLS.");
+            return;
+        }
+    }
+
     SystemLogger::info("Intentando conectar a MQTT...");
+    static int failedAttemptsWithToken = 0;
     
     if (_hmacToken.length() > 0) {
         SystemLogger::debug("Usando Token Dinamico...");
         if (_mqttClient.connect(_macAddress.c_str(), _macAddress.c_str(), _hmacToken.c_str())) {
             SystemLogger::info("Conectado a MQTT exitosamente.");
+            failedAttemptsWithToken = 0;
             
             // Suscripciones
             String otaTopic = "aqi/commands/" + _macAddress + "/ota";
@@ -193,6 +206,16 @@ void NetworkManager::connectMQTT() {
             _mqttClient.subscribe(configTopic.c_str());
         } else {
             SystemLogger::error("Fallo conexion MQTT.");
+            failedAttemptsWithToken++;
+            
+            // Si falla 4 veces consecutivas con el token guardado, puede ser que la BD del servidor o el token hayan expirado.
+            // Borramos el token para forzar un nuevo aprovisionamiento limpio en la siguiente vuelta.
+            if (failedAttemptsWithToken >= 4) {
+                SystemLogger::error("Token HMAC guardado no responde. Limpiando token e iniciando aprovisionamiento fresco...");
+                _prefs.remove("hmac_token");
+                _hmacToken = "";
+                failedAttemptsWithToken = 0;
+            }
         }
     } else {
         SystemLogger::info("Modo Aprovisionamiento...");

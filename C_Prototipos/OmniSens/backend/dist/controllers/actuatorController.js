@@ -9,7 +9,7 @@ const sendActuatorCommand = async (req, reply) => {
         const payload = req.body;
         const userClientId = req.user.client_id;
         const device = await db_1.db.selectFrom('devices')
-            .select('device_id')
+            .select(['device_id', 'mac_address'])
             .where('device_id', '=', deviceId)
             .where('client_id', '=', userClientId)
             .where('deleted_at', 'is', null)
@@ -17,8 +17,9 @@ const sendActuatorCommand = async (req, reply) => {
         if (!device) {
             return reply.status(403).send({ error: 'Device not found or unauthorized' });
         }
-        // Publicar a través de MQTT
-        (0, mqtt_1.publishCommand)(deviceId, 'actuators', payload);
+        // Publicar a través de MQTT usando la MAC address normalizada (sin dos puntos)
+        const normalizedMac = device.mac_address.toUpperCase().replace(/:/g, '');
+        (0, mqtt_1.publishCommand)(normalizedMac, 'actuators', payload);
         return reply.send({ success: true, message: 'Actuator command sent' });
     }
     catch (err) {
@@ -33,7 +34,7 @@ const sendConfigCommand = async (req, reply) => {
         const payload = req.body;
         const userClientId = req.user.client_id;
         const device = await db_1.db.selectFrom('devices')
-            .select('device_id')
+            .select(['device_id', 'mac_address'])
             .where('device_id', '=', deviceId)
             .where('client_id', '=', userClientId)
             .where('deleted_at', 'is', null)
@@ -41,8 +42,9 @@ const sendConfigCommand = async (req, reply) => {
         if (!device) {
             return reply.status(403).send({ error: 'Device not found or unauthorized' });
         }
-        // Publicar a través de MQTT
-        (0, mqtt_1.publishCommand)(deviceId, 'config', payload);
+        // Publicar a través de MQTT usando la MAC address normalizada (sin dos puntos)
+        const normalizedMac = device.mac_address.toUpperCase().replace(/:/g, '');
+        (0, mqtt_1.publishCommand)(normalizedMac, 'config', payload);
         return reply.send({ success: true, message: 'Config command sent' });
     }
     catch (err) {
