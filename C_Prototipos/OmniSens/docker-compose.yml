@@ -26,13 +26,16 @@ services:
       EMQX_NODE_NAME: emqx@node1.emqx.io
       EMQX_CLUSTER__DISCOVERY_STRATEGY: manual
       EMQX_ALLOW_ANONYMOUS: "true"
+      EMQX_LISTENERS__SSL__DEFAULT__KEYFILE: /opt/emqx/etc/certs/key.pem
+      EMQX_LISTENERS__SSL__DEFAULT__CERTFILE: /opt/emqx/etc/certs/cert.pem
+      EMQX_LISTENERS__SSL__DEFAULT__CACERTFILE: /opt/emqx/etc/certs/cert.pem
     ports:
       - "1883:1883"      # MQTT Broker port
       - "8883:8883"      # MQTTS Secure port
     volumes:
       - emqx_data:/opt/emqx/data
       - ./configuraciones/emqx_acl.conf:/opt/emqx/etc/acl.conf:ro
-      - ./configuraciones/certs:/opt/emqx/etc/certs:ro
+      - /home/ubuntu/emqx_certs:/opt/emqx/etc/certs:ro
     networks:
       - omnisens_net
     restart: unless-stopped
@@ -80,6 +83,7 @@ services:
       - "443:443"        # HTTPS access
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - aqi_backend
     networks:
