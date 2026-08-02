@@ -31,7 +31,7 @@
 #define BATTERY_PIN 35 // Pin analógico divisor de batería
 
 // Credenciales Base
-const char* MQTT_BROKER = "3.90.242.143";
+const char* MQTT_BROKER = "omnisens-iot.ddns.net";
 const uint16_t MQTT_PORT = 8883;
 
 // Tiempo de Watchdog (15 segundos)
