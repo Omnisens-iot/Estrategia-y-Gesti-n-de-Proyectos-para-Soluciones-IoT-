@@ -121,6 +121,18 @@ JOIN clients c ON d.client_id = c.client_id
 WHERE d.deleted_at IS NULL AND c.deleted_at IS NULL;
 
 -- =========================================================================
+-- TABLAS ADICIONALES (Notificaciones)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER REFERENCES clients(client_id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    auth VARCHAR(100) NOT NULL,
+    p256dh VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =========================================================================
 -- FUNCIÓN (Stored Procedure) PARA REGISTRAR DISPOSITIVOS
 -- =========================================================================
 CREATE OR REPLACE FUNCTION register_new_device(

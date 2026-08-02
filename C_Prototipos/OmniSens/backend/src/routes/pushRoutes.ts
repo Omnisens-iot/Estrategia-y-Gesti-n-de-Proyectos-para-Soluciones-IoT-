@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../config/db';
 
 export default async function pushRoutes(fastify: FastifyInstance) {
-  fastify.post('/subscribe', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/subscribe', { preHandler: [fastify.authenticate] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Usar request.user si existe (middleware JWT) o parsearlo
       const user = (request as any).user;

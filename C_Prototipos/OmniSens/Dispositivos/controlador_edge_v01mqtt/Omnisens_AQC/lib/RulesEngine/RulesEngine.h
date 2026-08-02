@@ -36,8 +36,6 @@ private:
     uint8_t _numRules;
 
     void loadRules();
-    void executeAction(const String& action, bool state);
-    void triggerFailsafe();
 };
 
 #endif

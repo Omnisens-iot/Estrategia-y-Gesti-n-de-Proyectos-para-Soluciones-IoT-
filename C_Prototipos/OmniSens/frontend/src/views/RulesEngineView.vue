@@ -189,6 +189,13 @@ const subscribeToPush = async () => {
     }
 
     const registration = await navigator.serviceWorker.ready;
+    
+    // Unsubscribe from any existing subscription to avoid applicationServerKey mismatch
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) {
+      await existingSub.unsubscribe();
+    }
+
     const publicVapidKey = 'BAEvyGWz5BfqXLfo6X1dqJrRKuJPmzpn0wUrtXsIeE1LJV1qa7e5c_-TcsUG8dqXs4V14ApfdBKgVwslp1xmuPI';
 
     const subscription = await registration.pushManager.subscribe({
@@ -202,7 +209,7 @@ const subscribeToPush = async () => {
     statusMessage.value = '✓ ¡Notificaciones activadas con éxito!';
   } catch (err) {
     console.error('Error al suscribir a push:', err);
-    alert('Ocurrió un error al activar las notificaciones.');
+    alert('Ocurrió un error al activar las notificaciones. ' + (err as Error).message);
   }
 };
 

@@ -38,6 +38,7 @@ void RulesEngine::loadRules() {
         
         _numRules++;
     }
+    SystemLogger::info(String("[Reglas] ") + String(_numRules) + " reglas cargadas.");
 }
 
 void RulesEngine::saveRulesFromJson(const JsonArray& rulesArray) {
@@ -56,27 +57,14 @@ void RulesEngine::saveRulesFromJson(const JsonArray& rulesArray) {
     SystemLogger::info("Reglas guardadas y aplicadas exitosamente.");
 }
 
-void RulesEngine::executeAction(const String& action, bool state) {
-    if (action == "r1") {
-        _salidas->setRele1(state);
-    } else if (action == "r2") {
-        _salidas->setRele2(state);
-    } else if (action == "pwm_100") {
-        _motor->comandoPWM(state ? 255 : 0);
-    } else if (action == "pwm_50") {
-        _motor->comandoPWM(state ? 127 : 0);
-    }
-}
-
-void RulesEngine::triggerFailsafe() {
-    SystemLogger::error("[Failsafe] Sensor dañado o nulo detectado por el motor de reglas. Apagando actuadores.");
-    _salidas->setRele1(false);
-    _salidas->setRele2(false);
-    _motor->comandoPWM(0);
-}
-
 void RulesEngine::evaluate(JsonDocument& telemetryDoc) {
     if (_numRules == 0) return;
+    
+    // Obtener el estado actual
+    bool nextR1 = _salidas->getRele1();
+    bool nextR2 = _salidas->getRele2();
+    uint8_t nextPWM = _motor->getPWM();
+    bool failsafeActivo = false;
     
     // Iteramos según prioridad (0 es la más alta en el array)
     for (uint8_t i = 0; i < _numRules; i++) {
@@ -84,17 +72,55 @@ void RulesEngine::evaluate(JsonDocument& telemetryDoc) {
         
         // Failsafe: Si la métrica ni siquiera está en el documento, o es nula
         if (telemetryDoc[m].isNull()) {
-            triggerFailsafe();
+            failsafeActivo = true;
             telemetryDoc["alarm_failsafe"] = true;
             continue; // Pasamos a la siguiente regla
         }
         
         float val = telemetryDoc[m].as<float>();
+        bool debeAplicar = false;
+        bool estadoDeseado = false;
         
         if (val > _rules[i].threshold) {
-            executeAction(_rules[i].action, true);
+            SystemLogger::debug(String("[Reglas] ") + m + " (" + String(val) + ") > umbral (" + String(_rules[i].threshold) + ").");
+            debeAplicar = true;
+            estadoDeseado = true;
         } else if (val < _rules[i].hysteresis) {
-            executeAction(_rules[i].action, false);
+            SystemLogger::debug(String("[Reglas] ") + m + " (" + String(val) + ") < histeresis (" + String(_rules[i].hysteresis) + ").");
+            debeAplicar = true;
+            estadoDeseado = false;
+        }
+        
+        if (debeAplicar) {
+            String action = _rules[i].action;
+            if (action == "r1") nextR1 = estadoDeseado;
+            else if (action == "r2") nextR2 = estadoDeseado;
+            else if (action == "pwm_100") nextPWM = estadoDeseado ? 100 : 0; // comandoPWM espera porcentaje (0-100)
+            else if (action == "pwm_50") nextPWM = estadoDeseado ? 50 : 0;
         }
     }
+    
+    if (failsafeActivo) {
+        SystemLogger::error("[Failsafe] Sensor dañado o nulo detectado por el motor de reglas. Apagando actuadores.");
+        nextR1 = false;
+        nextR2 = false;
+        nextPWM = 0;
+    }
+    
+    // Aplicar solo si el estado cambió (evita pulsos)
+    if (nextR1 != _salidas->getRele1()) {
+        SystemLogger::info(String("[Reglas] Cambio R1 -> ") + (nextR1 ? "ON" : "OFF"));
+        _salidas->setRele1(nextR1);
+    }
+    
+    if (nextR2 != _salidas->getRele2()) {
+        SystemLogger::info(String("[Reglas] Cambio R2 -> ") + (nextR2 ? "ON" : "OFF"));
+        _salidas->setRele2(nextR2);
+    }
+    
+    if (nextPWM != _motor->getPWM()) {
+        SystemLogger::info(String("[Reglas] Cambio PWM -> ") + String(nextPWM) + "%");
+        _motor->comandoPWM(nextPWM);
+    }
 }
+

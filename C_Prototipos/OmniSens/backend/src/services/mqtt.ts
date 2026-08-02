@@ -203,17 +203,17 @@ export function setupMqttSubscriber() {
               .execute();
 
             for (const rule of rules) {
-              if (!rule.condition) continue;
+              const ruleCondition = rule.condition || '>';
               
               const value = payload[rule.metric];
               if (value === undefined || value === null) continue;
               
               let isTriggered = false;
-              if (rule.condition === '>' && value > rule.threshold) isTriggered = true;
-              else if (rule.condition === '<' && value < rule.threshold) isTriggered = true;
-              else if (rule.condition === '==' && value == rule.threshold) isTriggered = true;
-              else if (rule.condition === '>=' && value >= rule.threshold) isTriggered = true;
-              else if (rule.condition === '<=' && value <= rule.threshold) isTriggered = true;
+              if (ruleCondition === '>' && value > rule.threshold) isTriggered = true;
+              else if (ruleCondition === '<' && value < rule.threshold) isTriggered = true;
+              else if (ruleCondition === '==' && value == rule.threshold) isTriggered = true;
+              else if (ruleCondition === '>=' && value >= rule.threshold) isTriggered = true;
+              else if (ruleCondition === '<=' && value <= rule.threshold) isTriggered = true;
               
               if (isTriggered) {
                 // Notificación Web Push para el Cliente
@@ -225,6 +225,9 @@ export function setupMqttSubscriber() {
                   };
                   sendWebPushToClient(device.client_id, pushPayload);
                 }
+                
+                // Notificación Telegram
+                await sendSystemAlert(actualDeviceId, `rule_${rule.metric}`, `⚠️ *Alerta OmniSens*\nEl dispositivo \`${actualDeviceId}\` superó el umbral de ${rule.metric} (Valor: ${value}).`);
               }
             }
           } catch (e) {
