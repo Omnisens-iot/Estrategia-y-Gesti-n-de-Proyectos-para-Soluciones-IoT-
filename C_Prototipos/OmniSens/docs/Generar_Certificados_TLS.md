@@ -74,3 +74,25 @@ environment:
   EMQX_LISTENERS__WSS__DEFAULT__KEYFILE: /opt/emqx/etc/certs/letsencrypt/key.pem
   EMQX_LISTENERS__WSS__DEFAULT__CERTFILE: /opt/emqx/etc/certs/letsencrypt/cert.pem
 ```
+
+## 5. Despliegue a Gran Escala (Fábrica vs Nube)
+
+Si el proyecto escala y se comienzan a fabricar cientos o miles de nodos, es crucial comprender dónde deben generarse y almacenarse las claves criptográficas para mantener la integridad del sistema.
+
+### ¿Dónde correr el script de generación de certificados?
+La mejor práctica de la industria dicta que la Autoridad Certificante (Root CA) debe generarse **de forma local en la fábrica** (o en una computadora altamente segura y aislada de internet), **jamás en la nube**. 
+
+El proceso de fábrica debe ser el siguiente:
+1. **Generación Offline:** La computadora segura de la fábrica ejecuta el script para generar `ca.key` y `ca.pem`. 
+2. **Resguardo de la Clave Privada:** El archivo `ca.key` se guarda bajo estrictas medidas de seguridad. Nunca debe salir de esa computadora aislada.
+3. **Flasheo Masivo:** El archivo público `ca.pem` se incluye en el código fuente base del firmware. Todos los miles de nodos en la línea de ensamblaje son flasheados con este mismo firmware.
+4. **Firma del Servidor:** Cuando se levanta un nuevo servidor en AWS (o cualquier otro proveedor cloud), la computadora segura de la fábrica firma un certificado de servidor (`server.crt`) utilizando su `ca.key`.
+5. **Despliegue en la Nube:** Únicamente los archivos `server.crt` y `server.key` se suben al servidor de AWS para configurar el Broker EMQX.
+
+### Resiliencia ante Hackeos (Compromiso de AWS)
+Si el servidor de AWS llegara a ser vulnerado, los atacantes podrían robar el certificado del servidor (`server.key`), pero **no tendrían acceso a la llave maestra de la CA** (`ca.key`), ya que esta nunca estuvo en la nube.
+Para recuperarse del ataque:
+1. Se da de baja el servidor comprometido.
+2. Se levanta un nuevo servidor AWS.
+3. Se genera y firma un nuevo par de certificados de servidor desde la máquina segura de la fábrica.
+4. Al encender el nuevo servidor, **todos los nodos Edge repartidos por el mundo se conectarán automáticamente a él**, ya que los nodos confían intrínsecamente en cualquier servidor que haya sido firmado por la CA de la fábrica. No es necesario realizar actualizaciones OTA de emergencia ni desplazarse a la ubicación física de cada nodo.
